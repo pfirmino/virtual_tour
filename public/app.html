@@ -1,0 +1,61 @@
+<html>
+
+<head>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="/javascripts/lookcontrols.js"></script>
+  <script src="/javascripts/mixshader.js"></script>
+</head>
+
+<body>
+  <script>
+    function init() {
+      getSceneConfig("/json/config.json");
+    }
+
+    function getSceneConfig(url) {
+      fetch(url)
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (jsonResponse) {
+          createSceneFromJson(jsonResponse);
+        });
+    }
+
+    function createSceneFromJson(json) {
+      var scene = document.querySelector("a-scene");
+      var cam = document.createElement("a-camera");
+      var assets = document.createElement("a-assets");
+      var dollhouse = document.createElement("a-entity");
+      dollhouse.setAttribute("id", "dollhouse");
+      scene.appendChild(cam);
+      scene.appendChild(assets);
+      scene.appendChild(dollhouse);
+
+      for (n in json.dollhouse) {
+        var meshAsset = document.createElement("a-asset-item");
+        meshAsset.setAttribute("id", "floor-" + n);
+        meshAsset.setAttribute("src", json["assets-path"] + json.dollhouse[n].mesh);
+        assets.appendChild(meshAsset);
+        var meshEntity = document.createElement("a-gltf-model");
+        meshEntity.setAttribute("src", "#floor-" + n);
+        dollhouse.appendChild(meshEntity);
+      }
+
+
+      focusOnObject();
+    }
+    
+    function focusOnObject(bboxSize, bboxPosition, cam){
+
+      cam.setAttribute("animation__focus", "property: position; to: ")
+      console.log(object3D);
+    }
+
+    init();
+  </script>
+  <a-scene device-orientation-permission-ui="enabled: false">
+  </a-scene>
+</body>
+
+</html>

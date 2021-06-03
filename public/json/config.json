@@ -1,0 +1,126 @@
+{
+    "image-path": "/images/",
+    "assets-path": "/assets/",
+    "camera-height": 1.7,
+    "camera-persp-position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+    },
+    "camera-top-position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+    },
+    "hotspot-offset": 0.001,
+    "navmeshoffset": 0.002,
+    "dollhouse": {
+        "bbox-size": {
+            "x": 7.826,
+            "y": 3.407,
+            "z": 14.053
+        },
+        "bbox-position": {
+            "x": 15.577,
+            "y": 1.596,
+            "z": -9.179
+        },
+        "floor1": {
+            "bbox-size": {
+                "x": 7.826,
+                "y": 3.407,
+                "z": 14.053
+            },
+            "bbox-position": {
+                "x": 15.577,
+                "y": 1.596,
+                "z": -9.179
+            },
+            "mesh": "dollhouse.gltf",
+            "navmesh": "navmesh.gltf",
+            "hotspots": [
+                {
+                    "id": "hotspot1",
+                    "position": {
+                        "x": 17.258,
+                        "y": 0,
+                        "z": -3.516
+                    },
+                    "image": "virtual_tour_360_01.jpg"
+                },
+                {
+                    "id": "hotspot2",
+                    "position": {
+                        "x": 14.369,
+                        "y": 0,
+                        "z": -3.628
+                    },
+                    "image": "virtual_tour_360_02.jpg"
+                },
+                {
+                    "id": "hotspot3",
+                    "position": {
+                        "x": 16.061,
+                        "y": 0,
+                        "z": -5.385
+                    },
+                    "image": "virtual_tour_360_03.jpg"
+                },
+                {
+                    "id": "hotspot4",
+                    "position": {
+                        "x": 14.102,
+                        "y": 0,
+                        "z": -5.185
+                    },
+                    "image": "virtual_tour_360_04.jpg"
+                },
+                {
+                    "id": "hotspot5",
+                    "position": {
+                        "x": 18.031,
+                        "y": 0,
+                        "z": -5.293
+                    },
+                    "image": "virtual_tour_360_05.jpg"
+                },
+                {
+                    "id": "hotspot6",
+                    "position": {
+                        "x": 15.408,
+                        "y": 0,
+                        "z": -7.333
+                    },
+                    "image": "virtual_tour_360_06.jpg"
+                },
+                {
+                    "id": "hotspot7",
+                    "position": {
+                        "x": 14.335,
+                        "y": 0,
+                        "z": -8.096
+                    },
+                    "image": "virtual_tour_360_07.jpg"
+                },
+                {
+                    "id": "hotspot8",
+                    "position": {
+                        "x": 16.882,
+                        "y": 0,
+                        "z": -9.433
+                    },
+                    "image": "virtual_tour_360_08.jpg"
+                },
+                {
+                    "id": "hotspot9",
+                    "position": {
+                        "x": 17.302,
+                        "y": 0,
+                        "z": -12.312
+                    },
+                    "image": "virtual_tour_360_09.jpg"
+                }
+            ]
+        }
+    }
+}
