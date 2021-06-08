@@ -3,12 +3,12 @@ AFRAME.registerShader("mix-shader", {
   schema: {
     // `is:'uniform'` tells A-Frame this should appear as uniform value in the shader(s).
     u_map1: { type: "map", is: "uniform" },
-    u_uv1: { type: "number", is: "uniform" }, // 0 for generated Spherical and 1 for mesh UVs
-    u_map1_origin: { type: "vec3", is: "uniform" },
+    u_uv1: { type: "number", is: "uniform", default: 1}, // 0 for generated Spherical and 1 for mesh UVs
+    u_map1_origin: { type: "vec3", is: "uniform"},
     u_map2: { type: "map", is: "uniform" },
-    u_uv2: { type: "number", is: "uniform" }, // 0 for generated Spherical and 1 for mesh UVs
-    u_map2_origin: { type: "vec3", is: "uniform" },
-    u_factor: { type: "number", is: "uniform" }
+    u_uv2: { type: "number", is: "uniform", default: 1}, // 0 for generated Spherical and 1 for mesh UVs
+    u_map2_origin: { type: "vec3", is: "uniform"},
+    u_factor: { type: "number", is: "uniform"}
   },
   // Setting raw to true uses THREE.RawShaderMaterial instead of ShaderMaterial,
   raw: false,
@@ -36,6 +36,7 @@ AFRAME.registerShader("mix-shader", {
        uniform sampler2D u_map1;
        uniform int u_uv1;
        uniform sampler2D u_map2;
+       uniform int u_uv2;
        uniform float u_factor;
        varying vec2 v_uv;
        varying vec4 g_uv;
@@ -57,7 +58,7 @@ AFRAME.registerShader("mix-shader", {
           vec2 lat_lng2 = GetSphericalProjection(g_uv, u_map2_origin);
        
           //Blend images using u_factor
-          vec3 mixedColors = mix(textureLod(u_map1, lat_lng1, 0.0).xyz, textureLod(u_map2, lat_lng2, 0.0).xyz, u_factor);
+          vec3 mixedColors = mix(textureLod(u_map1, (u_uv1 < 1)? lat_lng1 : v_uv, 0.0).xyz, textureLod(u_map2, (u_uv2 < 1)? lat_lng2 : v_uv, 0.0).xyz, u_factor);
           
           //Paint pixels in the FB
           gl_FragColor = vec4(mixedColors, 1.0);

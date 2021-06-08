@@ -8,54 +8,146 @@
 
 <body>
   <script>
-    function init() {
-      getSceneConfig("/json/config.json");
-    }
+    //Initialize dollhouse scene
+    AFRAME.registerComponent("a-tour", {
+      init: function () {
+        let config;
+        let dollhouse = document.querySelector("#dollhouse");
+        let assets = document.querySelector("a-assets");
 
-    function getSceneConfig(url) {
-      fetch(url)
-        .then(function (response) {
-          return response.json();
-        })
-        .then(function (jsonResponse) {
-          createSceneFromJson(jsonResponse);
-        });
-    }
+        //Get config file
+        fetch("/json/config.json")
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (jsonResponse) {
+            init(jsonResponse, dollhouse);
+          });
 
-    function createSceneFromJson(json) {
-      var scene = document.querySelector("a-scene");
-      var cam = document.createElement("a-camera");
-      var assets = document.createElement("a-assets");
-      var dollhouse = document.createElement("a-entity");
-      dollhouse.setAttribute("id", "dollhouse");
-      scene.appendChild(cam);
-      scene.appendChild(assets);
-      scene.appendChild(dollhouse);
+        //Create scene entities from json config file
+        function init(json, dollhouse) {
+          let floorCount = 0;
+          for (n in json.dollhouse) {
+            //Adds dollhouse Texture asset
+            var img = document.createElement("img");
+            img.setAttribute("id", "img-dollhouse-" + json.dollhouse[n].id);
+            img.setAttribute("crossorigin", "anonymous");
+            img.setAttribute("src", json["assets-path"] + json.dollhouse[n].image);
+            assets.appendChild(img);
 
-      for (n in json.dollhouse) {
-        var meshAsset = document.createElement("a-asset-item");
-        meshAsset.setAttribute("id", "floor-" + n);
-        meshAsset.setAttribute("src", json["assets-path"] + json.dollhouse[n].mesh);
-        assets.appendChild(meshAsset);
-        var meshEntity = document.createElement("a-gltf-model");
-        meshEntity.setAttribute("src", "#floor-" + n);
-        dollhouse.appendChild(meshEntity);
+            //Adds dollhouse mesh asset
+            var dh = document.createElement("a-asset-item");
+            dh.setAttribute("id", "asset-dollhouse-" + json.dollhouse[n].id);
+            dh.setAttribute("src", json["assets-path"] + json.dollhouse[n].mesh);
+            assets.appendChild(dh);
+
+            //Adds navmesh asset
+            var nm = document.createElement("a-asset-item");
+            nm.setAttribute("id", "asset-navmesh" + json.dollhouse[n].id);
+            nm.setAttribute("src", json["assets-path"] + json.dollhouse[n].mesh);
+            nm.setAttribute("class", "clickable");
+            assets.appendChild(nm);
+
+            //Adds dollhouse entity
+            var dhe = document.createElement("a-entity");
+            dhe.setAttribute("obj-model", "obj: #asset-dollhouse-" + json.dollhouse[n].id);
+            dhe.setAttribute("id", "" + json.dollhouse[n].id);
+            dhe.setAttribute("material", "shader: mix-shader; u_map1: #img-dollhouse-" + json.dollhouse[n].id + 
+            "; u_map1_origin: 0 0 0; u_map2: #img-dollhouse-" + json.dollhouse[n].id + 
+            "; u_map2_origin: 0 0 0;");
+            //Add Compute Box component
+            dhe.setAttribute("validate", "");
+
+            dollhouse.appendChild(dhe);
+
+            floorCount++;
+          }
+          dollhouse.setAttribute("floor-count", floorCount);
+          dollhouse.setAttribute("floor-loaded", 0);
+        }
       }
+    });
 
+    //A component to check if all the models have been loaded properly so bbox can be computated
+    AFRAME.registerComponent("validate", {
+      init: function () {
+        let el = this.el;
+        let dollhouse = document.querySelector("#dollhouse");
+        let camRig = document.querySelector("#cam-master-rig");
 
-      focusOnObject();
-    }
-    
-    function focusOnObject(bboxSize, bboxPosition, cam){
+        el.addEventListener("model-loaded", (e) => {
+          
+          let floorLoaded = dollhouse.getAttribute("floor-loaded");
+          let floorCount = dollhouse.getAttribute("floor-count");
 
-      cam.setAttribute("animation__focus", "property: position; to: ")
-      console.log(object3D);
-    }
+          //Verifies if all the floor meshes have been loaded
+          if (floorLoaded < floorCount) {
+            floorLoaded++;
+            dollhouse.setAttribute("floor-loaded", floorLoaded);
+            console.log("floorLoaded: " + floorLoaded);
+            if(floorLoaded == floorCount){
+              camRig.emit("focus-on", {}, false);
+            }
+          }
+      });
+      }
+    });
 
-    init();
+    //Zoom Extends to a given entity - Must put on Camera Rig
+    AFRAME.registerComponent("focus-on", {
+      schema: {
+        target: { type: "string", default: "all" }, //all or floor number
+        position: { type: "string", default: "home" } //home or top
+      },
+      init: function () {
+        let data = this.data;
+        let el = this.el;
+        let dollhouse = document.querySelector("#dollhouse");
+        let cam = document.querySelector("a-camera");
+        let camOffsetRig = document.querySelector("#cam-offset-rig");
+        
+        
+
+        this.el.addEventListener("focus-on", function (e) {
+          if (data.target == "all" && data.position == "home")
+                focusOn(dollhouse.object3D);
+        });
+
+        function focusOn(obj) {
+          let bbox = new THREE.Box3().setFromObject(obj);
+
+          let size = bbox.getSize();
+          let max = Math.max(size.x, size.y, size.z);
+          let center = bbox.getCenter();
+
+          let rotation = { x: -45, y: 33, z: 33 };
+          let offset = Math.cbrt(size.x * size.y * size.z) * 2;
+
+          el.setAttribute("position", center.x  + " " + center.y + " " + center.z );
+          camOffsetRig.setAttribute("animation__focus", "property: rotation; to: " +
+          rotation.x + " " + rotation.y + " " + rotation.z + "; dur: 800");
+          
+          cam.setAttribute("animation__focus", "property: position; to: 0 0 " + (max * 1) + "; dur: 800");
+        }
+        camOffsetRig.addEventListener("animationcomplete__focus", function(e){
+          console.log("look-controls");
+          el.setAttribute("look-controls", "enabled: true");
+        });
+      }
+    });
   </script>
-  <a-scene device-orientation-permission-ui="enabled: false">
+
+  <a-scene device-orientation-permission-ui="enabled: false" a-tour>
+    <a-assets>
+    </a-assets>
+    <a-entity id="dollhouse"></a-entity>
+    <a-entity id="cam-master-rig" look-controls="enabled: false" focus-on="target: all; position: home;">
+      <a-entity id="cam-offset-rig">
+        <a-camera near=10 look-controls="enabled: false"></a-camera>
+      </a-entity>
+    </a-entity>
   </a-scene>
+
 </body>
 
 </html>

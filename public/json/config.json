@@ -1,46 +1,18 @@
 {
     "image-path": "/images/",
     "assets-path": "/assets/",
-    "camera-height": 1.7,
-    "camera-persp-position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-    },
-    "camera-top-position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-    },
+    "camera-offset": 1.7,
     "hotspot-offset": 0.001,
     "navmeshoffset": 0.002,
     "dollhouse": {
-        "bbox-size": {
-            "x": 7.826,
-            "y": 3.407,
-            "z": 14.053
-        },
-        "bbox-position": {
-            "x": 15.577,
-            "y": 1.596,
-            "z": -9.179
-        },
         "floor1": {
-            "bbox-size": {
-                "x": 7.826,
-                "y": 3.407,
-                "z": 14.053
-            },
-            "bbox-position": {
-                "x": 15.577,
-                "y": 1.596,
-                "z": -9.179
-            },
-            "mesh": "dollhouse.gltf",
-            "navmesh": "navmesh.gltf",
+            "id": "floor-1", 
+            "mesh": "dollhouse.obj",
+            "navmesh": "navmesh.obj",
+            "image": "dollhouse.jpg", 
             "hotspots": [
                 {
-                    "id": "hotspot1",
+                    "id": "hotspot-1",
                     "position": {
                         "x": 17.258,
                         "y": 0,
@@ -49,7 +21,7 @@
                     "image": "virtual_tour_360_01.jpg"
                 },
                 {
-                    "id": "hotspot2",
+                    "id": "hotspot-2",
                     "position": {
                         "x": 14.369,
                         "y": 0,

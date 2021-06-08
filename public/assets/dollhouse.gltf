@@ -3,9 +3,6 @@
         "version": "2.0",
         "generator": "babylon.js glTF exporter for 3dsmax 2019 v20201020.3"
     },
-    "extensionsUsed": [
-        "KHR_materials_unlit"
-    ],
     "scene": 0,
     "scenes": [
         {
@@ -33,8 +30,7 @@
                         "NORMAL": 2,
                         "TEXCOORD_0": 3
                     },
-                    "indices": 0,
-                    "material": 0
+                    "indices": 0
                 }
             ],
             "name": "dollhouse"
@@ -106,47 +102,6 @@
         {
             "uri": "dollhouse.bin",
             "byteLength": 1459520
-        }
-    ],
-    "materials": [
-        {
-            "pbrMetallicRoughness": {
-                "baseColorTexture": {
-                    "index": 0
-                },
-                "metallicFactor": 0.0,
-                "roughnessFactor": 0.450053632
-            },
-            "emissiveTexture": {
-                "index": 0
-            },
-            "emissiveFactor": [
-                1.0,
-                1.0,
-                1.0
-            ],
-            "name": "dollhouse_mtl",
-            "extensions": {
-                "KHR_materials_unlit": {}
-            }
-        }
-    ],
-    "textures": [
-        {
-            "sampler": 0,
-            "source": 0,
-            "name": "dollhouse.jpg"
-        }
-    ],
-    "images": [
-        {
-            "uri": "./dollhouse.jpg"
-        }
-    ],
-    "samplers": [
-        {
-            "magFilter": 9729,
-            "minFilter": 9987
         }
     ]
 }
