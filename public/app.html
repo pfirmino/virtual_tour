@@ -29,36 +29,50 @@
           let floorCount = 0;
           for (n in json.dollhouse) {
             //Adds dollhouse Texture asset
-            var img = document.createElement("img");
+            let img = document.createElement("img");
             img.setAttribute("id", "img-dollhouse-" + json.dollhouse[n].id);
             img.setAttribute("crossorigin", "anonymous");
             img.setAttribute("src", json["assets-path"] + json.dollhouse[n].image);
             assets.appendChild(img);
 
             //Adds dollhouse mesh asset
-            var dh = document.createElement("a-asset-item");
+            let dh = document.createElement("a-asset-item");
             dh.setAttribute("id", "asset-dollhouse-" + json.dollhouse[n].id);
             dh.setAttribute("src", json["assets-path"] + json.dollhouse[n].mesh);
             assets.appendChild(dh);
 
             //Adds navmesh asset
-            var nm = document.createElement("a-asset-item");
-            nm.setAttribute("id", "asset-navmesh" + json.dollhouse[n].id);
-            nm.setAttribute("src", json["assets-path"] + json.dollhouse[n].mesh);
-            nm.setAttribute("class", "clickable");
+            let nm = document.createElement("a-asset-item");
+            nm.setAttribute("id", "asset-navmesh-" + json.dollhouse[n].id);
+            nm.setAttribute("src", json["assets-path"] + json.dollhouse[n].navmesh);
             assets.appendChild(nm);
 
             //Adds dollhouse entity
-            var dhe = document.createElement("a-entity");
+            let dhe = document.createElement("a-entity");
             dhe.setAttribute("obj-model", "obj: #asset-dollhouse-" + json.dollhouse[n].id);
             dhe.setAttribute("id", "" + json.dollhouse[n].id);
             dhe.setAttribute("material", "shader: mix-shader; u_map1: #img-dollhouse-" + json.dollhouse[n].id + 
             "; u_map1_origin: 0 0 0; u_map2: #img-dollhouse-" + json.dollhouse[n].id + 
             "; u_map2_origin: 0 0 0;");
-            //Add Compute Box component
+            //Validate Loaded Models
             dhe.setAttribute("validate", "");
-
             dollhouse.appendChild(dhe);
+
+            //Adds navmesh
+            let nme = document.createElement("a-entity");
+            nme.setAttribute("obj-model", "obj: #asset-navmesh-" + json.dollhouse[n].id);
+            nme.setAttribute("id", "navmesh-" + json.dollhouse[n].id);
+            nme.setAttribute("class", "clickable");
+            dhe.appendChild(nme);
+
+            let hsg = document.createElement("a-entity");
+            hsg.setAttribute("id", "hotspots-"+ json.dollhouse[n].id);
+            dhe.appendChild(hsg);
+
+            for (h in json.dollhouse[n].hotspots){
+              console.log(json.dollhouse[n].hotspots[h].id);
+            }
+            
 
             floorCount++;
           }
@@ -84,12 +98,11 @@
           if (floorLoaded < floorCount) {
             floorLoaded++;
             dollhouse.setAttribute("floor-loaded", floorLoaded);
-            console.log("floorLoaded: " + floorLoaded);
             if(floorLoaded == floorCount){
               camRig.emit("focus-on", {}, false);
             }
           }
-      });
+        });
       }
     });
 
@@ -102,7 +115,7 @@
       init: function () {
         let data = this.data;
         let el = this.el;
-        let dollhouse = document.querySelector("#dollhouse");
+        let dollhouse = document.querySelector("#floor-1");
         let cam = document.querySelector("a-camera");
         let camOffsetRig = document.querySelector("#cam-offset-rig");
         
@@ -120,7 +133,7 @@
           let max = Math.max(size.x, size.y, size.z);
           let center = bbox.getCenter();
 
-          let rotation = { x: -45, y: 33, z: 33 };
+          let rotation = { x: 0, y: 0, z: 0 };
           let offset = Math.cbrt(size.x * size.y * size.z) * 2;
 
           el.setAttribute("position", center.x  + " " + center.y + " " + center.z );
