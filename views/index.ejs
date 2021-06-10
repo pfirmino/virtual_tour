@@ -1,89 +1,157 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title><%= title %></title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="/javascripts/lookcontrols.js"></script>
-    <script src="/javascripts/mixshader.js"></script>
-  </head>
-  <body>
-    <script>
-       AFRAME.registerComponent("a-tour", {
-         init: function(){
-           let el = this.el;
-           let camMasterRig = document.querySelector("#cam-master-rig");
-           
-           el.addEventListener("loaded", (e) => {
-             camMasterRig.emit("focus-on", {target: "all", preset: "home"});
-           });
-         }
-       });
 
-       AFRAME.registerComponent("focus-on", {
-         init: function(){
-          let el = this.el;
-          let dollhouse = document.querySelector("#dollhouse");
-          let cam = document.querySelector("a-camera");
-          let camOffsetRig = document.querySelector("#cam-offset-rig");
-          
-          el.addEventListener("focus-on", (e) => {
-            console.log("focus on!", e.detail);
+<head>
+  <title>
+    <%= title %>
+  </title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="/javascripts/lookcontrols.js"></script>
+  <script src="/javascripts/mixshader.js"></script>
+</head>
 
-            if (e.detail.target == "all" && e.detail.preset == "home")
-              focusOn(dollhouse.object3D);
-          });
+<body>
+  <script>
+    AFRAME.registerComponent("a-tour", {
+      init: function () {
+        let el = this.el;
+        let camMasterRig = document.querySelector("#cam-master-rig");
 
-          function focusOn(obj) {
-            let bbox = new THREE.Box3().setFromObject(obj);
+        el.addEventListener("loaded", (e) => {
+          //camMasterRig.emit("focus-on", { target: "all", preset: "home" });
+          let n = checkNearerHotspot(new THREE.Vector3( 17.258, 0, -3.516 ));
+          Teleport(n.position, n.floor);
+        });
+      }
+    });
 
-            let size = bbox.getSize();
-            
-            let max = Math.max(size.x, size.y, size.z);
-            let center = bbox.getCenter();
+    AFRAME.registerComponent("focus-on", {
+      init: function () {
+        let el = this.el;
+        let dollhouse = document.querySelector("#dollhouse");
+        let cam = document.querySelector("a-camera");
+        let camOffsetRig = document.querySelector("#cam-offset-rig");
 
-            //console.log(size, center)
+        el.addEventListener("focus-on", (e) => {
+          console.log("focus on!", e.detail);
 
-            let rotation = { x: -45, y: 33, z: 33 };
-            let offset = Math.cbrt(size.x * size.y * size.z) * 2;
+          if (e.detail.target == "all" && e.detail.preset == "home")
+            focusOn(dollhouse.object3D);
+        });
 
-            el.setAttribute("position", center.x  + " " + center.y + " " + center.z );
-            camOffsetRig.setAttribute("animation__focus", "property: rotation; to: " +
+        function focusOn(obj) {
+          let bbox = new THREE.Box3().setFromObject(obj);
+
+          let size = bbox.getSize();
+
+          let max = Math.max(size.x, size.y, size.z);
+          let center = bbox.getCenter();
+
+          //console.log(size, center)
+
+          let rotation = { x: -45, y: 33, z: 33 };
+          let offset = Math.cbrt(size.x * size.y * size.z) * 2;
+
+          el.setAttribute("position", center.x + " " + center.y + " " + center.z);
+          camOffsetRig.setAttribute("animation__focus", "property: rotation; to: " +
             rotation.x + " " + rotation.y + " " + rotation.z + "; dur: 800");
-            
-            cam.setAttribute("animation__focus", "property: position; to: 0 0 " + (max * 1) + "; dur: 800");
-          }
-         }
-       })
-    </script>
-    <a-scene device-orientation-permission-ui="enabled: false" a-tour>
-      <a-assets>
-        <% for(n in dollhouse.floors){ %>
-          <img id="<%= 'img-dollhouse-' + dollhouse.floors[n].id %>" crossorigin="anonymous" src="<%= assetspath + dollhouse.floors[n].image %>">
-          <a-asset-item id="<%= 'asset-dollhouse-' + dollhouse.floors[n].id %>" src="<%= assetspath + dollhouse.floors[n].mesh %>"></a-asset-item>
-          <a-asset-item id="<%= 'asset-navmesh-' + dollhouse.floors[n].id %>" src="<%= assetspath + dollhouse.floors[n].navmesh %>"></a-asset-item>
-          <% for(i in dollhouse.floors[n].hotspots){ %>
-            <img id="<%= 'img-' + dollhouse.floors[n].hotspots[i].id %>" crossorigin="anonymous" src="<%= assetspath + dollhouse.floors[n].hotspots[i].image %>">
+
+          cam.setAttribute("animation__focus", "property: position; to: 0 0 " + (max * 1) + "; dur: 800");
+        }
+      }
+    });
+
+    function checkNearerHotspot(intersectionPoint) {
+      let hotspotGroup = document.querySelectorAll(".hotspot");
+      let distance = null;
+      let position = null;
+      let floor = 0;
+      let id = "";
+
+      hotspotGroup.forEach((n, i) => {
+        let d = n.object3D.position.distanceTo(intersectionPoint);
+
+        if (distance == null) {
+          position = n.object3D.position;
+          distance = d;
+          floor = n.getAttribute("floor");
+          id = n.id;
+        }
+        if (d < distance) {
+          position = n.object3D.position;
+          distance = d;
+          floor = n.getAttribute("floor");
+          id = n.id;
+        }
+      });
+      console.log(id, distance, position, floor);
+      return { position: position, floor: floor };
+    }
+
+    function Teleport(position, floor){
+      let cam = document.querySelector("a-camera");
+      cam.setAttribute("animation", "property: position; to: " + 
+        position.x + " " +
+        (position.y + 1.75) + " " +
+        position.z + "; dur: 1000; startEvents: teleport;");
+
+      cam.emit("teleport", {}, false);
+
+      console.log(position, floor);
+    }
+
+    // Adds Click Event Listener to trigger the teleport system
+    AFRAME.registerComponent("cursor-listener", {
+      init: function () {
+        this.el.addEventListener("click", function (e) {
+          let n = checkNearerHotspot(e.detail.intersection.point);
+          
+          Teleport(n.position, n.floor);
+        });
+      }
+    });
+  </script>
+  <a-scene device-orientation-permission-ui="enabled: false" a-tour>
+    <a-assets>
+      <% for(n in dollhouse.floors){ %>
+        <img id="<%= 'img-dollhouse-' + dollhouse.floors[n].id %>" crossorigin="anonymous"
+          src="<%= assetspath + dollhouse.floors[n].image %>">
+        <a-asset-item id="<%= 'asset-dollhouse-' + dollhouse.floors[n].id %>"
+          src="<%= assetspath + dollhouse.floors[n].mesh %>"></a-asset-item>
+        <a-asset-item id="<%= 'asset-navmesh-' + dollhouse.floors[n].id %>"
+          src="<%= assetspath + dollhouse.floors[n].navmesh %>"></a-asset-item>
+        <% for(i in dollhouse.floors[n].hotspots){ %>
+          <img id="<%= 'img-' + dollhouse.floors[n].hotspots[i].id %>" crossorigin="anonymous"
+            src="<%= assetspath + dollhouse.floors[n].hotspots[i].image %>">
           <% } %>
-        <% } %>
-      </a-assets>
-      <a-entity id="dollhouse">
-        <% for(n in dollhouse.floors){ %>
-          <a-entity obj-model="<%= 'obj: #asset-dollhouse-' + dollhouse.floors[n].id %>" id="<%= dollhouse.floors[n].id %>" 
-            material="<%= 'shader: mix-shader; u_map1: #img-dollhouse-' + dollhouse.floors[n].id + '; u_map1_origin: 0 0 0; u_map2: #img-dollhouse-' + dollhouse.floors[n].id + '; u_map2_origin: 0 0 0;' %>" >
-          </a-entity>
-          <a-entity obj-model="<%= 'obj: #asset-navmesh-' + dollhouse.floors[n].id %>" id="<%= 'navmesh-' + dollhouse.floors[n].id %>" 
-            material="color: grey" position="<%= dollhouse.floors[n].position.x %> <%= dollhouse.floors[n].position.y + navmeshoffset %> <%= dollhouse.floors[n].position.z %>">
-          </a-entity>
-          <% for(i in dollhouse.floors[n].hotspots){ %>
-            <a-entity geometry="primitive: plane; width:0.3; height: 0.3;" rotation="-90 0 0" material="shader: flat; color: red;" id="<%= dollhouse.floors[n].hotspots[i].id %>" position="<%= dollhouse.floors[n].hotspots[i].position.x %> <%= dollhouse.floors[n].hotspots[i].position.y + hotspotoffset %> <%= dollhouse.floors[n].hotspots[i].position.z %>"></a-entity>
-          <% } %>
-        <% } %>
-      </a-entity>
-      <a-entity id="cam-master-rig" focus-on>
-        <a-entity id="cam-offset-rig">
-          <a-camera look-controls="enabled: true"></a-camera>
+            <% } %>
+    </a-assets>
+    <a-entity id="dollhouse">
+      <% for(n in dollhouse.floors){ %>
+        <a-entity obj-model="<%= 'obj: #asset-dollhouse-' + dollhouse.floors[n].id %>"
+          id="<%= dollhouse.floors[n].id %>"
+          material="<%= 'shader: mix-shader; u_map1: #img-dollhouse-' + dollhouse.floors[n].id + '; u_map1_origin: 0 0 0; u_map2: #img-dollhouse-' + dollhouse.floors[n].id + '; u_map2_origin: 0 0 0;' %>">
         </a-entity>
-      </a-entity>
-    </a-scene>
-  </body>
+        <a-entity obj-model="<%= 'obj: #asset-navmesh-' + dollhouse.floors[n].id %>"
+          id="<%= 'navmesh-' + dollhouse.floors[n].id %>" material="color: grey"
+          position="<%= dollhouse.floors[n].position.x %> <%= dollhouse.floors[n].position.y + navmeshoffset %> <%= dollhouse.floors[n].position.z %>"
+          cursor-listener
+          class="clickable">
+        </a-entity>
+        <% for(i in dollhouse.floors[n].hotspots){ %>
+          <a-entity class="hotspot" floor="<%= dollhouse.floors[n].id %>" geometry="primitive: plane; width:0.3; height: 0.3;" rotation="-90 0 0"
+            material="shader: flat; color: red;" id="<%= dollhouse.floors[n].hotspots[i].id %>"
+            position="<%= dollhouse.floors[n].hotspots[i].position.x %> <%= dollhouse.floors[n].hotspots[i].position.y + hotspotoffset %> <%= dollhouse.floors[n].hotspots[i].position.z %>">
+          </a-entity>
+          <% } %>
+            <% } %>
+    </a-entity>
+
+    <a-camera look-controls="enabled: true">
+      <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable"></a-entity>
+    </a-camera>
+
+  </a-scene>
+</body>
+
 </html>
