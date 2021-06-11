@@ -19,8 +19,8 @@
 
         el.addEventListener("loaded", (e) => {
           //camMasterRig.emit("focus-on", { target: "all", preset: "home" });
-          let n = checkNearerHotspot(new THREE.Vector3( 17.258, 0, -3.516 ));
-          Teleport(n.position, n.floor);
+          let details = checkNearerHotspot(new THREE.Vector3( 17.258, 0, -3.516 ));
+          Teleport(details);
         });
       }
     });
@@ -63,50 +63,92 @@
 
     function checkNearerHotspot(intersectionPoint) {
       let hotspotGroup = document.querySelectorAll(".hotspot");
-      let distance = null;
-      let position = null;
-      let floor = 0;
-      let id = "";
+      let details = { distance: null, position: null, floor: null, id: null};
 
       hotspotGroup.forEach((n, i) => {
         let d = n.object3D.position.distanceTo(intersectionPoint);
 
-        if (distance == null) {
-          position = n.object3D.position;
-          distance = d;
-          floor = n.getAttribute("floor");
-          id = n.id;
+        if (details.distance == null) {
+          details.position = n.object3D.position;
+          details.distance = d;
+          details.floor = n.getAttribute("floor");
+          details.id = n.id;
         }
-        if (d < distance) {
-          position = n.object3D.position;
-          distance = d;
-          floor = n.getAttribute("floor");
-          id = n.id;
+        if (d < details.distance) {
+          details.position = n.object3D.position;
+          details.distance = d;
+          details.floor = n.getAttribute("floor");
+          details.id = n.id;
         }
       });
-      console.log(id, distance, position, floor);
-      return { position: position, floor: floor };
+
+      //console.log(details);
+      return details;
     }
 
-    function Teleport(position, floor){
+    //Register DollHouse General Status
+    AFRAME.registerComponent("status", {
+      schema: {
+        canteleport: {type: "boolean"},
+        reverse: {type: "boolean"},
+        firsttransiction: {type: "boolean"},
+      }
+    });
+
+        //Register DollHouse General Status
+    AFRAME.registerComponent("camera-offset", {
+      schema: {default: 1.7}
+    });
+
+    function Teleport(details, canTeleport, reverse, firstTransition){
+      //console.log(details);
       let cam = document.querySelector("a-camera");
+      let floor = document.querySelector("#" + details.floor);
+      let status = document.querySelector("#dollhouse").getAttribute("status");
+
+      console.log(status);
+      
       cam.setAttribute("animation", "property: position; to: " + 
-        position.x + " " +
-        (position.y + 1.75) + " " +
-        position.z + "; dur: 1000; startEvents: teleport;");
+      details.position.x + " " +
+        (details.position.y + cam.getAttribute("camera-offset")) + " " +
+        details.position.z + "; dur: 1000; startEvents: teleport;");
+      
+      
+      let img = document.querySelector("#img-" + details.id);
+      let material = floor.getAttribute("material");
 
-      cam.emit("teleport", {}, false);
+      console.log(status.reverse);
+      
+      if(status.reverse){
+        material.u_map1 = img;
+        material.u_map1_origin = {x: details.position.x, y: details.position.y + cam.getAttribute("camera-offset"), z: details.position.z};
+        material.u_uv1 = 0;
+        console.log(material, img);
+        floor.setAttribute("material", material);
+        floor.setAttribute("animation", "property: material.u_factor; from: 1.0; to: 0.0; dur: 1000; startEvents: teleport;");
+        status.reverse = false;
+        document.querySelector("#dollhouse").setAttribute("status", status);
+      } else {
+        material.u_map2 = img;
+        material.u_map2_origin = {x: details.position.x, y: details.position.y + cam.getAttribute("camera-offset"), z: details.position.z};
+        material.u_uv2 = 0;
+        console.log(material, img);
+        floor.setAttribute("material", material);
+        floor.setAttribute("animation", "property: material.u_factor; from: 0.0; to: 1.0; dur: 1000; startEvents: teleport;");
+        status.reverse = true;
+        document.querySelector("#dollhouse").setAttribute("status", status)
+      }
 
-      console.log(position, floor);
+      cam.emit("teleport");
+      floor.emit("teleport");
     }
 
     // Adds Click Event Listener to trigger the teleport system
     AFRAME.registerComponent("cursor-listener", {
       init: function () {
         this.el.addEventListener("click", function (e) {
-          let n = checkNearerHotspot(e.detail.intersection.point);
-          
-          Teleport(n.position, n.floor);
+          let details = checkNearerHotspot(e.detail.intersection.point);
+          Teleport(details);
         });
       }
     });
@@ -126,7 +168,7 @@
           <% } %>
             <% } %>
     </a-assets>
-    <a-entity id="dollhouse">
+    <a-entity id="dollhouse" status="canteleport: true; reverse: false; firstransiction: true;">
       <% for(n in dollhouse.floors){ %>
         <a-entity obj-model="<%= 'obj: #asset-dollhouse-' + dollhouse.floors[n].id %>"
           id="<%= dollhouse.floors[n].id %>"
@@ -134,20 +176,21 @@
         </a-entity>
         <a-entity obj-model="<%= 'obj: #asset-navmesh-' + dollhouse.floors[n].id %>"
           id="<%= 'navmesh-' + dollhouse.floors[n].id %>" material="color: grey"
-          position="<%= dollhouse.floors[n].position.x %> <%= dollhouse.floors[n].position.y + navmeshoffset %> <%= dollhouse.floors[n].position.z %>"
+          visible="false"
+          position="<%= dollhouse.floors[n].position.x %> <%= dollhouse.floors[n].position.y %> <%= dollhouse.floors[n].position.z %>"
           cursor-listener
           class="clickable">
         </a-entity>
         <% for(i in dollhouse.floors[n].hotspots){ %>
-          <a-entity class="hotspot" floor="<%= dollhouse.floors[n].id %>" geometry="primitive: plane; width:0.3; height: 0.3;" rotation="-90 0 0"
+          <a-entity class="hotspot" visible="false" floor="<%= dollhouse.floors[n].id %>" geometry="primitive: plane; width:0.3; height: 0.3;" rotation="-90 0 0"
             material="shader: flat; color: red;" id="<%= dollhouse.floors[n].hotspots[i].id %>"
-            position="<%= dollhouse.floors[n].hotspots[i].position.x %> <%= dollhouse.floors[n].hotspots[i].position.y + hotspotoffset %> <%= dollhouse.floors[n].hotspots[i].position.z %>">
+            position="<%= dollhouse.floors[n].hotspots[i].position.x %> <%= dollhouse.floors[n].hotspots[i].position.y %> <%= dollhouse.floors[n].hotspots[i].position.z %>">
           </a-entity>
           <% } %>
             <% } %>
     </a-entity>
 
-    <a-camera look-controls="enabled: true">
+    <a-camera camera-offset="<%= cameraoffset %>" look-controls="enabled: true">
       <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable"></a-entity>
     </a-camera>
 

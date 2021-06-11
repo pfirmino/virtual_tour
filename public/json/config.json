@@ -1,6 +1,5 @@
 {
     "title": "Virtual Tour",
-    "imagepath": "/images/",
     "assetspath": "/assets/",
     "cameraoffset": 1.7,
     "hotspotoffset": 0.01,

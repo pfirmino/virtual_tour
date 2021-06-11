@@ -46,9 +46,9 @@ AFRAME.registerShader("mix-shader", {
        uniform vec3 u_map2_origin;
        
        vec2 GetSphericalProjection(vec4 uv, vec3 origin){
-         float radius = distance(vec4(origin, 1.0), uv);
+         float radius = distance(uv, vec4(origin, 1.0));
          return vec2(vec2((atan(uv.z - origin.z, uv.x - origin.x) / 3.1415926538 + 1.0) * 0.5,
-         asin(uv.y / radius) / 3.1415926538 + 0.5));
+         asin((uv.y - origin.y) / radius) / 3.1415926538 + 0.5));
        }
  
        // A fragment shader can set the color via gl_FragColor
