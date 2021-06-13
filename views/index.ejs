@@ -15,11 +15,9 @@
     AFRAME.registerComponent("a-tour", {
       init: function () {
         let el = this.el;
-        let camMasterRig = document.querySelector("#cam-master-rig");
 
         el.addEventListener("loaded", (e) => {
-          //camMasterRig.emit("focus-on", { target: "all", preset: "home" });
-          let details = checkNearerHotspot(new THREE.Vector3(17.258, 0, -3.516));
+          let details = { preset: "perspective"};
           Teleport(details);
         });
       }
@@ -68,21 +66,20 @@
       hotspotGroup.forEach((n, i) => {
         let d = n.object3D.position.distanceTo(intersectionPoint);
 
-        if (details.distance == null) {
-          details.position = n.object3D.position;
-          details.distance = d;
-          details.floor = n.getAttribute("floor");
-          details.id = n.id;
-        }
-        if (d < details.distance) {
-          details.position = n.object3D.position;
-          details.distance = d;
-          details.floor = n.getAttribute("floor");
-          details.id = n.id;
-        }
+        if (details.distance == null)
+          SetDetails(n, d, details);
+
+        else if (d < details.distance)
+          SetDetails(n, d, details);
       });
 
-      //console.log(details);
+      function SetDetails(n, d, details){
+          details.position = n.object3D.position;
+          details.distance = d;
+          details.floor = n.getAttribute("floor");
+          details.id = n.id;
+      }
+
       return details;
     }
 
@@ -91,36 +88,57 @@
       schema: {
         canteleport: { type: "boolean" },
         reverse: { type: "boolean" },
-        firsttransition: { type: "boolean" }
+        firsttransition: { type: "boolean" },
+        center: {type: "vec3"}
+      },
+      init: function(){
+        let status = this.el.getAttribute("status");
+        let bbox = new THREE.Box3().setFromObject(this.el.object3D);
+        let center = bbox.getCenter();
+        status.center = center;
       }
     });
 
     //Register DollHouse General Status
     AFRAME.registerComponent("camera-settings", {
-      schema: { height: {type: "number", default: 1.7} },
-      init: function(){
-          this.el.addEventListener("animationcomplete", function(e){
-            let status = document.querySelector("#dollhouse").getAttribute("status");
-            status.canteleport = true;
-            document.querySelector("#dollhouse").setAttribute("status", status);
-          });
+      schema: { height: { type: "number", default: 1.7 } },
+      init: function () {
+        this.el.addEventListener("animationcomplete", function (e) {
+          let status = document.querySelector("#dollhouse").getAttribute("status");
+          status.canteleport = true;
+          document.querySelector("#dollhouse").setAttribute("status", status);
+        });
       }
     });
 
+    //Teleport System Function
     function Teleport(details) {
       let status = document.querySelector("#dollhouse").getAttribute("status");
 
-      if (status.canteleport) {
-        status.canteleport = false;
-        document.querySelector("#dollhouse").setAttribute("status", status);
-        
+      //If camera can teleports and hotspot preset is passed, the nearer hotspot is found and the transition is animated.
+      //When animation is completed,  
+      if (status.canteleport && details.preset == "hotspot") {
+        let dollhouse = document.querySelector("#dollhouse");
         let cam = document.querySelector("a-camera");
         let floor = document.querySelector("#" + details.floor);
+        let camRig = document.querySelector("#camera-rig");
+        let pos = details.position.clone().sub(status.center); 
+        
+        status.canteleport = false;
+        dollhouse.setAttribute("status", status);
+        console.log(status.center);
 
         cam.setAttribute("animation", "property: position; to: " +
-          details.position.x + " " +
-          (details.position.y + cam.getAttribute("camera-settings").height) + " " +
-          details.position.z + "; dur: 1000; startEvents: teleport;");
+          pos.x + " " +
+          (pos.y + cam.getAttribute("camera-settings").height) + " " +
+          pos.z + "; dur: 1000; startEvents: teleport;");
+
+        camRig.setAttribute("animation", "property: position; to: " +
+        status.center.x + " " +
+        status.center.y + " " +
+        status.center.z + "; dur: 1000; startEvents: teleport;");
+
+        camRig.setAttribute("animation__Rot", "property: rotation; to: 0 0 0; dur: 1000; startEvents: teleport;");
 
         let img = document.querySelector("#img-" + details.id);
         let material = floor.getAttribute("material");
@@ -145,6 +163,21 @@
 
         cam.emit("teleport");
         floor.emit("teleport");
+      } else if (status.canteleport && details.preset == "perspective"){
+        let cam = document.querySelector("a-camera");
+        let camRig = document.querySelector("#camera-rig");
+
+        camRig.setAttribute("animation__Rot", "property: rotation; to: -45 0 0; dur: 1000; startEvents: teleport;");
+        cam.setAttribute("animation", "property: position; to: 0 0 20; dur: 1000; startEvents: teleport;");
+
+
+        camRig.setAttribute("animation", "property: position; to: " +
+        status.center.x + " " +
+        status.center.y + " " +
+        status.center.z + "; dur: 0; startEvents: teleport;");
+
+        cam.emit("teleport");
+        camRig.emit("teleport");
       }
     }
 
@@ -164,6 +197,7 @@
         this.el.addEventListener("mouseup", function (e) {
           if (!IsDragging(StartTimeStamp, e.timeStamp)) {
             let details = checkNearerHotspot(e.detail.intersection.point);
+            details.preset = "hotspot";
             Teleport(details);
           }
         });
@@ -171,12 +205,13 @@
         this.el.addEventListener("touchend", function (e) {
           if (!IsDragging(StartTimeStamp, e.timeStamp)) {
             let details = checkNearerHotspot(e.detail.intersection.point);
+            details.preset = "hotspot";
             Teleport(details);
           }
         });
-        
-        function IsDragging(StartTimeStamp, EndTimeStamp){
-          if (EndTimeStamp- StartTimeStamp < 100.0)
+
+        function IsDragging(StartTimeStamp, EndTimeStamp) {
+          if (EndTimeStamp - StartTimeStamp < 100.0)
             return false;
           else
             return true;
@@ -227,15 +262,12 @@
             <% } %>
     </a-entity>
 
-    <a-camera camera-settings="height: <%= cameraoffset %>;" look-controls="enabled: true">
-      <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable">
-      </a-entity>
-
-      <a-entity geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03" material="color: black; shader: flat"
-        teleport-reticle>
-      </a-entity>
-    </a-camera>
-
+    <a-entity id="camera-rig">
+      <a-camera camera-settings="height: <%= cameraoffset %>;" position="0 0 10" look-controls="enabled: true">
+        <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable">
+        </a-entity>
+      </a-camera>
+    </a-entity>
   </a-scene>
 </body>
 
