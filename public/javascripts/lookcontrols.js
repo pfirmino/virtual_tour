@@ -14,8 +14,8 @@ AFRAME.components[
     (direction = this.data.reverseTouchDrag ? 1 : -1),
     (deltaY = (2 * Math.PI * (t.touches[0].pageX - this.touchStart.x)) / canvas.clientWidth),
     (deltaX = (2 * Math.PI * (t.touches[0].pageY - this.touchStart.y)) / canvas.clientHeight),
-    (pitchObject.rotation.x -= 0.3 * deltaX * direction),
-    (yawObject.rotation.y -= 0.5 * deltaY * direction),
+    (pitchObject.rotation.x += 0.3 * deltaX * direction),
+    (yawObject.rotation.y += 0.5 * deltaY * direction),
     (pitchObject.rotation.x = Math.max(-PI_2, Math.min(PI_2, pitchObject.rotation.x))),
     (this.touchStart = { x: t.touches[0].pageX, y: t.touches[0].pageY })
   );
