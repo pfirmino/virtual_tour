@@ -132,6 +132,7 @@
           pos.x + " " +
           (pos.y + cam.getAttribute("camera-settings").height) + " " +
           pos.z + "; dur: 1000; startEvents: teleport;");
+        cam.emit("teleport");
 
         camRig.setAttribute("animation", "property: position; to: " +
         status.center.x + " " +
@@ -139,6 +140,10 @@
         status.center.z + "; dur: 1000; startEvents: teleport;");
 
         camRig.setAttribute("animation__Rot", "property: rotation; to: 0 0 0; dur: 1000; startEvents: teleport;");
+        camRig.components["look-controls"].pitchObject.setRotationFromAxisAngle(new THREE.Vector3(1, 0, 0), THREE.Math.degToRad(0));
+        camRig.components["look-controls"].yawObject.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.Math.degToRad(0));
+        camRig.setAttribute("look-controls", "enabled: false");
+        camRig.emit("teleport");
 
         let img = document.querySelector("#img-" + details.id);
         let material = floor.getAttribute("material");
@@ -160,14 +165,13 @@
           status.reverse = true;
           document.querySelector("#dollhouse").setAttribute("status", status)
         }
-
-        cam.emit("teleport");
         floor.emit("teleport");
+        cam.setAttribute("look-controls", "enabled: true;");
       } else if (status.canteleport && details.preset == "perspective"){
         let cam = document.querySelector("a-camera");
         let camRig = document.querySelector("#camera-rig");
 
-        camRig.setAttribute("animation__Rot", "property: rotation; to: -45 0 0; dur: 1000; startEvents: teleport;");
+        camRig.setAttribute("animation__Rot", "property: rotation; to: -45 45 0; dur: 1000; startEvents: teleport;");
         cam.setAttribute("animation", "property: position; to: 0 0 20; dur: 1000; startEvents: teleport;");
 
 
@@ -178,6 +182,11 @@
 
         cam.emit("teleport");
         camRig.emit("teleport");
+
+        setTimeout(function(){ camRig.setAttribute("look-controls", "enabled: true;")}, 1000);
+        console.log(THREE.Math.degToRad(45));
+        camRig.components["look-controls"].pitchObject.setRotationFromAxisAngle(new THREE.Vector3(1, 0, 0), THREE.Math.degToRad(-45));
+        camRig.components["look-controls"].yawObject.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.Math.degToRad(45));
       }
     }
 
@@ -262,8 +271,8 @@
             <% } %>
     </a-entity>
 
-    <a-entity id="camera-rig">
-      <a-camera camera-settings="height: <%= cameraoffset %>;" position="0 0 10" look-controls="enabled: true">
+    <a-entity id="camera-rig" look-controls="enabled: false">
+      <a-camera camera-settings="height: <%= cameraoffset %>;" position="0 0 10"  look-controls="enabled: false">
         <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable">
         </a-entity>
       </a-camera>
