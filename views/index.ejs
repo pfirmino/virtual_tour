@@ -89,13 +89,13 @@
         canteleport: { type: "boolean" },
         reverse: { type: "boolean" },
         firsttransition: { type: "boolean" },
-        center: {type: "vec3"}
+        center: {type: "vec3"},
+        size: {type: "vec3"}
       },
       init: function(){
-        let status = this.el.getAttribute("status");
         let bbox = new THREE.Box3().setFromObject(this.el.object3D);
-        let center = bbox.getCenter();
-        status.center = center;
+        this.data.center = bbox.getCenter();
+        this.data.size = bbox.getSize();
       }
     });
 
@@ -172,7 +172,7 @@
         let camRig = document.querySelector("#camera-rig");
 
         camRig.setAttribute("animation__Rot", "property: rotation; to: -45 45 0; dur: 1000; startEvents: teleport;");
-        cam.setAttribute("animation", "property: position; to: 0 0 20; dur: 1000; startEvents: teleport;");
+        cam.setAttribute("animation", "property: position; to: 0 0 " + (status.size.x + status.size.y + status.size.z) * Math.sqrt(document.documentElement.clientHeight/document.documentElement.clientWidth)  + "; dur: 1000; startEvents: teleport;");
 
 
         camRig.setAttribute("animation", "property: position; to: " +
