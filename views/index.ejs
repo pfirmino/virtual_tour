@@ -13,75 +13,61 @@
 <body>
   <script>
     AFRAME.registerComponent("a-tour", {
+      schema: {
+        reverse: { type: "boolean", default: false }
+      },
       init: function () {
         let el = this.el;
+        let data = this.data;
 
-        el.addEventListener("loaded", (e) => {
-          let details = { preset: "perspective"};
-          Teleport(details);
+        this.el.addEventListener("loaded", function (e) {
+          //Centralize camera to the dollhouse and change to perspective view after loading the scene
+          let cam = document.querySelector("a-camera");
+          let o = new THREE.Box3().setFromObject(document.querySelector("#dollhouse").object3D);
+          let p = o.getCenter(new THREE.Vector3());
+          document.querySelector("#camera-rig-trackball-origin").object3D.position.copy(p);
+          cam.object3D.position.copy(p);
+          cam.object3D.rotation.x = THREE.Math.degToRad(-45);
+          cam.object3D.rotation.y = THREE.Math.degToRad(45);
+          cam.setAttribute("camera-rig", { enabled: true });
+          cam.emit("teleport-perspective");
+        });
+
+        let floors = document.querySelectorAll(".floor");
+
+        floors.forEach((f, i) => {
+          f.addEventListener("teleport-hotspot", (e) => {
+            let img;
+            let material = f.getAttribute("material");
+            let d;
+
+            if(e.detail.hotspot.id != null)
+              img = document.querySelector("#img-" + e.detail.hotspot.id);
+            else
+              img = document.querySelector("#img-dollhouse-" + e.detail.hotspot.floor);
+              
+            if (data.reverse) {
+              d = (e.detail.hotspot.id != null)? 1000 : 333;
+              material.u_map1 = img;
+              material.u_map1_origin = { x: e.detail.origin.x, y: e.detail.origin.y, z: e.detail.origin.z };
+              material.u_uv1 = (e.detail.hotspot.id != null)? 0 : 1;
+              f.setAttribute("material", material);
+              f.setAttribute("animation", "property: material.u_factor; from: 1.0; to: 0.0; dur: " + d + "; startEvents: teleport;");
+              data.reverse = false;
+            } else {
+              d = (e.detail.hotspot.id != null)? 1000 : 333;
+              material.u_map2 = img;
+              material.u_map2_origin = { x: e.detail.origin.x, y: e.detail.origin.y, z: e.detail.origin.z };
+              material.u_uv2 = (e.detail.hotspot.id != null)? 0 : 1;
+              f.setAttribute("material", material);
+              f.setAttribute("animation", "property: material.u_factor; from: 0.0; to: 1.0; dur: " + d + "; startEvents: teleport;");
+              data.reverse = true;
+            }
+            f.emit("teleport");
+          });
         });
       }
     });
-
-    AFRAME.registerComponent("focus-on", {
-      init: function () {
-        let el = this.el;
-        let dollhouse = document.querySelector("#dollhouse");
-        let cam = document.querySelector("a-camera");
-        let camOffsetRig = document.querySelector("#cam-offset-rig");
-
-        el.addEventListener("focus-on", (e) => {
-          console.log("focus on!", e.detail);
-
-          if (e.detail.target == "all" && e.detail.preset == "home")
-            focusOn(dollhouse.object3D);
-        });
-
-        function focusOn(obj) {
-          let bbox = new THREE.Box3().setFromObject(obj);
-
-          let size = bbox.getSize();
-
-          let max = Math.max(size.x, size.y, size.z);
-          let center = bbox.getCenter();
-
-          //console.log(size, center)
-
-          let rotation = { x: -45, y: 33, z: 33 };
-          let offset = Math.cbrt(size.x * size.y * size.z) * 2;
-
-          el.setAttribute("position", center.x + " " + center.y + " " + center.z);
-          camOffsetRig.setAttribute("animation__focus", "property: rotation; to: " +
-            rotation.x + " " + rotation.y + " " + rotation.z + "; dur: 800");
-
-          cam.setAttribute("animation__focus", "property: position; to: 0 0 " + (max * 1) + "; dur: 800");
-        }
-      }
-    });
-
-    function checkNearerHotspot(intersectionPoint) {
-      let hotspotGroup = document.querySelectorAll(".hotspot");
-      let details = { distance: null, position: null, floor: null, id: null };
-
-      hotspotGroup.forEach((n, i) => {
-        let d = n.object3D.position.distanceTo(intersectionPoint);
-
-        if (details.distance == null)
-          SetDetails(n, d, details);
-
-        else if (d < details.distance)
-          SetDetails(n, d, details);
-      });
-
-      function SetDetails(n, d, details){
-          details.position = n.object3D.position;
-          details.distance = d;
-          details.floor = n.getAttribute("floor");
-          details.id = n.id;
-      }
-
-      return details;
-    }
 
     //Register DollHouse General Status
     AFRAME.registerComponent("status", {
@@ -89,111 +75,93 @@
         canteleport: { type: "boolean" },
         reverse: { type: "boolean" },
         firsttransition: { type: "boolean" },
-        center: {type: "vec3"},
-        size: {type: "vec3"}
+        center: { type: "vec3" },
+        size: { type: "vec3" }
       },
-      init: function(){
+      init: function () {
         let bbox = new THREE.Box3().setFromObject(this.el.object3D);
         this.data.center = bbox.getCenter();
         this.data.size = bbox.getSize();
       }
     });
 
-    //Register DollHouse General Status
-    AFRAME.registerComponent("camera-settings", {
-      schema: { height: { type: "number", default: 1.7 } },
+    //Register Camera Link Movement
+    AFRAME.registerComponent("camera-rig", {
+      schema: {
+        enabled: { type: "boolean", default: "false" },
+        preset: { type: "string", default: "perspective" }, // perspective, top-view or hotspot
+        target: { type: "selector", default: "#camera-rig-trackball-orbit" },
+        currenthotspot: { type: "string" },
+        currentfloor: { type: "string" }
+      },
       init: function () {
-        this.el.addEventListener("animationcomplete", function (e) {
-          let status = document.querySelector("#dollhouse").getAttribute("status");
-          status.canteleport = true;
-          document.querySelector("#dollhouse").setAttribute("status", status);
+        let data = this.data;
+        let el = this.el;
+
+        this.el.addEventListener("teleport-perspective", function (e) {
+          let o = document.querySelector("#camera-rig-trackball-origin");
+          if(data.preset != "perspective"){
+            console.log(data.target);
+            document.querySelector("#" + data.currentfloor).emit("teleport-hotspot", { origin: o.object3D.position, hotspot: { id: null, floor: data.currentfloor }});
+          }
+          o.components["look-controls"].pitchObject.setRotationFromAxisAngle(new THREE.Vector3(1, 0, 0), THREE.Math.degToRad(-45));
+          o.components["look-controls"].yawObject.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.Math.degToRad(45));
+          data.target = document.querySelector("#camera-rig-trackball-orbit");
+          data.preset = "perspective";
         });
+
+        this.el.addEventListener("teleport-hotspot", function (e) {
+          let hotspotGroup = document.querySelectorAll(".hotspot");
+          let hotspot = { distance: null, id: null, floor: null };
+
+          hotspotGroup.forEach((n, i) => {
+            if (hotspot.distance == null)
+              hotspot = {
+                distance: n.object3D.position.distanceTo(e.detail.intersection.point),
+                id: n.getAttribute("id"),
+                floor: n.getAttribute("floor")
+              };
+
+            else if (hotspot.distance > n.object3D.position.distanceTo(e.detail.intersection.point))
+              hotspot = {
+                distance: n.object3D.position.distanceTo(e.detail.intersection.point),
+                id: n.getAttribute("id"),
+                floor: n.getAttribute("floor")
+              };
+          });
+
+          document.querySelector("#" + hotspot.floor).emit("teleport-hotspot", { origin: document.querySelector("#" + hotspot.id).object3D.position, hotspot: hotspot });
+
+          let hr = document.querySelector("#camera-rig-hotspot");
+          if (data.preset == "perspective") {
+            hr.components["look-controls"].pitchObject.rotation.copy(document.querySelector("#camera-rig-trackball-origin").components["look-controls"].pitchObject.rotation);
+            hr.components["look-controls"].yawObject.rotation.copy(document.querySelector("#camera-rig-trackball-origin").components["look-controls"].yawObject.rotation);
+            data.preset = "hotspot";
+          }
+          hr.object3D.position.copy(document.querySelector("#" + hotspot.id).object3D.position);
+          data.target = hr;
+          data.currenthotspot = hotspot.id;
+          data.currentfloor = hotspot.floor;
+        });
+      },
+      tick: function (e) {
+        if (this.data.enabled) {
+          if (this.data.target != null && this.data.target != "") {
+            let p = this.data.target.object3D.getWorldPosition(new THREE.Vector3());
+            let r = this.data.target.object3D.getWorldQuaternion(new THREE.Quaternion());
+            this.el.object3D.position.lerp(p, 0.05);
+            this.el.object3D.quaternion.slerp(r, 0.05);
+          }
+        }
       }
     });
 
-    //Teleport System Function
-    function Teleport(details) {
-      let status = document.querySelector("#dollhouse").getAttribute("status");
-
-      //If camera can teleports and hotspot preset is passed, the nearer hotspot is found and the transition is animated.
-      //When animation is completed,  
-      if (status.canteleport && details.preset == "hotspot") {
-        let dollhouse = document.querySelector("#dollhouse");
-        let cam = document.querySelector("a-camera");
-        let floor = document.querySelector("#" + details.floor);
-        let camRig = document.querySelector("#camera-rig");
-        let pos = details.position.clone().sub(status.center); 
-        
-        status.canteleport = false;
-        dollhouse.setAttribute("status", status);
-        console.log(status.center);
-
-        cam.setAttribute("animation", "property: position; to: " +
-          pos.x + " " +
-          (pos.y + cam.getAttribute("camera-settings").height) + " " +
-          pos.z + "; dur: 1000; startEvents: teleport;");
-        cam.emit("teleport");
-
-        camRig.setAttribute("animation", "property: position; to: " +
-        status.center.x + " " +
-        status.center.y + " " +
-        status.center.z + "; dur: 1000; startEvents: teleport;");
-
-        camRig.setAttribute("animation__Rot", "property: rotation; to: 0 0 0; dur: 1000; startEvents: teleport;");
-        camRig.components["look-controls"].pitchObject.setRotationFromAxisAngle(new THREE.Vector3(1, 0, 0), THREE.Math.degToRad(0));
-        camRig.components["look-controls"].yawObject.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.Math.degToRad(0));
-        camRig.setAttribute("look-controls", "enabled: false");
-        camRig.emit("teleport");
-
-        let img = document.querySelector("#img-" + details.id);
-        let material = floor.getAttribute("material");
-
-        if (status.reverse) {
-          material.u_map1 = img;
-          material.u_map1_origin = { x: details.position.x, y: details.position.y + cam.getAttribute("camera-settings").height, z: details.position.z };
-          material.u_uv1 = 0;
-          floor.setAttribute("material", material);
-          floor.setAttribute("animation", "property: material.u_factor; from: 1.0; to: 0.0; dur: 1000; startEvents: teleport;");
-          status.reverse = false;
-          document.querySelector("#dollhouse").setAttribute("status", status);
-        } else {
-          material.u_map2 = img;
-          material.u_map2_origin = { x: details.position.x, y: details.position.y + cam.getAttribute("camera-settings").height, z: details.position.z };
-          material.u_uv2 = 0;
-          floor.setAttribute("material", material);
-          floor.setAttribute("animation", "property: material.u_factor; from: 0.0; to: 1.0; dur: 1000; startEvents: teleport;");
-          status.reverse = true;
-          document.querySelector("#dollhouse").setAttribute("status", status)
-        }
-        floor.emit("teleport");
-        cam.setAttribute("look-controls", "enabled: true;");
-      } else if (status.canteleport && details.preset == "perspective"){
-        let cam = document.querySelector("a-camera");
-        let camRig = document.querySelector("#camera-rig");
-
-        camRig.setAttribute("animation__Rot", "property: rotation; to: -45 45 0; dur: 1000; startEvents: teleport;");
-        cam.setAttribute("animation", "property: position; to: 0 0 " + (status.size.x + status.size.y + status.size.z) * Math.sqrt(document.documentElement.clientHeight/document.documentElement.clientWidth)  + "; dur: 1000; startEvents: teleport;");
-
-
-        camRig.setAttribute("animation", "property: position; to: " +
-        status.center.x + " " +
-        status.center.y + " " +
-        status.center.z + "; dur: 0; startEvents: teleport;");
-
-        cam.emit("teleport");
-        camRig.emit("teleport");
-
-        setTimeout(function(){ camRig.setAttribute("look-controls", "enabled: true;")}, 1000);
-        console.log(THREE.Math.degToRad(45));
-        camRig.components["look-controls"].pitchObject.setRotationFromAxisAngle(new THREE.Vector3(1, 0, 0), THREE.Math.degToRad(-45));
-        camRig.components["look-controls"].yawObject.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.Math.degToRad(45));
-      }
-    }
 
     // Adds Click Event Listener to trigger the teleport system
     AFRAME.registerComponent("cursor-listener", {
       init: function () {
         let StartTimeStamp;
+        let cam = document.querySelector("a-camera");
 
         this.el.addEventListener("mousedown", function (e) {
           StartTimeStamp = e.timeStamp;
@@ -205,22 +173,18 @@
 
         this.el.addEventListener("mouseup", function (e) {
           if (!IsDragging(StartTimeStamp, e.timeStamp)) {
-            let details = checkNearerHotspot(e.detail.intersection.point);
-            details.preset = "hotspot";
-            Teleport(details);
+            cam.emit("teleport-hotspot", { intersection: e.detail.intersection });
           }
         });
 
         this.el.addEventListener("touchend", function (e) {
           if (!IsDragging(StartTimeStamp, e.timeStamp)) {
-            let details = checkNearerHotspot(e.detail.intersection.point);
-            details.preset = "hotspot";
-            Teleport(details);
+            cam.emit("teleport-hotspot", { intersection: e.detail.intersection });
           }
         });
 
         function IsDragging(StartTimeStamp, EndTimeStamp) {
-          if (EndTimeStamp - StartTimeStamp < 100.0)
+          if (EndTimeStamp - StartTimeStamp < 200.0)
             return false;
           else
             return true;
@@ -228,12 +192,6 @@
       }
     });
 
-    AFRAME.registerComponent("teleport-reticle", {
-      init: function () { },
-      tick: function (e) {
-
-      }
-    })
   </script>
   <a-scene device-orientation-permission-ui="enabled: false" a-tour>
     <a-assets>
@@ -253,7 +211,7 @@
     <a-entity id="dollhouse" status="canteleport: true; reverse: false; firsttransition: true;">
       <% for(n in dollhouse.floors){ %>
         <a-entity obj-model="<%= 'obj: #asset-dollhouse-' + dollhouse.floors[n].id %>"
-          id="<%= dollhouse.floors[n].id %>"
+          id="<%= dollhouse.floors[n].id %>" class="floor"
           material="<%= 'shader: mix-shader; u_map1: #img-dollhouse-' + dollhouse.floors[n].id + '; u_map1_origin: 0 0 0; u_map2: #img-dollhouse-' + dollhouse.floors[n].id + '; u_map2_origin: 0 0 0;' %>">
         </a-entity>
         <a-entity obj-model="<%= 'obj: #asset-navmesh-' + dollhouse.floors[n].id %>"
@@ -271,12 +229,16 @@
             <% } %>
     </a-entity>
 
-    <a-entity id="camera-rig" look-controls="enabled: false">
-      <a-camera camera-settings="height: <%= cameraoffset %>;" position="0 0 10"  look-controls="enabled: false">
-        <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable">
-        </a-entity>
-      </a-camera>
+    <a-entity id="camera-rig-hotspot" look-controls="enabled: true"></a-entity>
+
+    <a-entity id="camera-rig-trackball-origin" look-controls="enabled: true">
+      <a-entity id="camera-rig-trackball-orbit" position="0 0 20"></a-entity>
     </a-entity>
+
+    <a-camera camera-rig look-controls="enabled: false">
+      <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable">
+      </a-entity>
+    </a-camera>
   </a-scene>
 </body>
 

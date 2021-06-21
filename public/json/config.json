@@ -16,47 +16,47 @@
                 "hotspots": {
                     "hotspot1": {
                         "id": "hotspot-1",
-                        "position": {"x": 17.258, "y": 0, "z": -3.516},
+                        "position": {"x": 17.258, "y": 1.7, "z": -3.516},
                         "image": "virtual_tour_360_01.jpg"
                     },
                     "hotspot2": {
                         "id": "hotspot-2",
-                        "position": {"x": 14.369, "y": 0, "z": -3.628},
+                        "position": {"x": 14.369, "y": 1.7, "z": -3.628},
                         "image": "virtual_tour_360_02.jpg"
                     },
                     "hotspot3": {
                         "id": "hotspot-3",
-                        "position": {"x": 16.061, "y": 0, "z": -5.385},
+                        "position": {"x": 16.061, "y": 1.7, "z": -5.385},
                         "image": "virtual_tour_360_03.jpg"
                     },
                     "hotspot4": {
                         "id": "hotspot-4",
-                        "position": {"x": 14.102, "y": 0, "z": -5.185},
+                        "position": {"x": 14.102, "y": 1.7, "z": -5.185},
                         "image": "virtual_tour_360_04.jpg"
                     },
                     "hotspot5": {
                         "id": "hotspot-5",
-                        "position": {"x": 18.031, "y": 0, "z": -5.293},
+                        "position": {"x": 18.031, "y": 1.7, "z": -5.293},
                         "image": "virtual_tour_360_05.jpg"
                     },
                     "hotspot6": {
                         "id": "hotspot-6",
-                        "position": {"x": 15.408, "y": 0, "z": -7.333},
+                        "position": {"x": 15.408, "y": 1.7, "z": -7.333},
                         "image": "virtual_tour_360_06.jpg"
                     },
                     "hotspot7": {
                         "id": "hotspot-7",
-                        "position": {"x": 14.335, "y": 0, "z": -8.096},
+                        "position": {"x": 14.335, "y": 1.7, "z": -8.096},
                         "image": "virtual_tour_360_07.jpg"
                     },
                     "hotspot8": {
                         "id": "hotspot-8",
-                        "position": {"x": 16.882, "y": 0, "z": -9.433},
+                        "position": {"x": 16.882, "y": 1.7, "z": -9.433},
                         "image": "virtual_tour_360_08.jpg"
                     },
                     "hotspot9": {
                         "id": "hotspot-9",
-                        "position": {"x": 17.302, "y": 0, "z": -12.312},
+                        "position": {"x": 17.302, "y": 1.7, "z": -12.312},
                         "image": "virtual_tour_360_09.jpg"
                     }
                 }
