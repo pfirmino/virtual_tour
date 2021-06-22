@@ -8,6 +8,22 @@
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="/javascripts/lookcontrols.js"></script>
   <script src="/javascripts/mixshader.js"></script>
+  <style>
+    .overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      margin-left: 30px;
+      margin-bottom: 30px;
+      z-index: 9999;
+      display: inline-block;
+      border-radius: 8px;
+    }
+    .overlay button{
+      cursor: pointer;
+      font-size: large;
+    }
+  </style>
 </head>
 
 <body>
@@ -41,24 +57,24 @@
             let material = f.getAttribute("material");
             let d;
 
-            if(e.detail.hotspot.id != null)
+            if (e.detail.hotspot.id != null)
               img = document.querySelector("#img-" + e.detail.hotspot.id);
             else
               img = document.querySelector("#img-dollhouse-" + e.detail.hotspot.floor);
-              
+
             if (data.reverse) {
-              d = (e.detail.hotspot.id != null)? 1000 : 333;
+              d = (e.detail.hotspot.id != null) ? 1000 : 333;
               material.u_map1 = img;
               material.u_map1_origin = { x: e.detail.origin.x, y: e.detail.origin.y, z: e.detail.origin.z };
-              material.u_uv1 = (e.detail.hotspot.id != null)? 0 : 1;
+              material.u_uv1 = (e.detail.hotspot.id != null) ? 0 : 1;
               f.setAttribute("material", material);
               f.setAttribute("animation", "property: material.u_factor; from: 1.0; to: 0.0; dur: " + d + "; startEvents: teleport;");
               data.reverse = false;
             } else {
-              d = (e.detail.hotspot.id != null)? 1000 : 333;
+              d = (e.detail.hotspot.id != null) ? 1000 : 333;
               material.u_map2 = img;
               material.u_map2_origin = { x: e.detail.origin.x, y: e.detail.origin.y, z: e.detail.origin.z };
-              material.u_uv2 = (e.detail.hotspot.id != null)? 0 : 1;
+              material.u_uv2 = (e.detail.hotspot.id != null) ? 0 : 1;
               f.setAttribute("material", material);
               f.setAttribute("animation", "property: material.u_factor; from: 0.0; to: 1.0; dur: " + d + "; startEvents: teleport;");
               data.reverse = true;
@@ -69,30 +85,15 @@
       }
     });
 
-    //Register DollHouse General Status
-    AFRAME.registerComponent("status", {
-      schema: {
-        canteleport: { type: "boolean" },
-        reverse: { type: "boolean" },
-        firsttransition: { type: "boolean" },
-        center: { type: "vec3" },
-        size: { type: "vec3" }
-      },
-      init: function () {
-        let bbox = new THREE.Box3().setFromObject(this.el.object3D);
-        this.data.center = bbox.getCenter();
-        this.data.size = bbox.getSize();
-      }
-    });
-
     //Register Camera Link Movement
     AFRAME.registerComponent("camera-rig", {
       schema: {
-        enabled: { type: "boolean", default: "false" },
+        enabled: { type: "boolean", default: false },
         preset: { type: "string", default: "perspective" }, // perspective, top-view or hotspot
         target: { type: "selector", default: "#camera-rig-trackball-orbit" },
         currenthotspot: { type: "string" },
-        currentfloor: { type: "string" }
+        currentfloor: { type: "string" },
+        speed: { type: "number", default: 0.05 }
       },
       init: function () {
         let data = this.data;
@@ -100,33 +101,37 @@
 
         this.el.addEventListener("teleport-perspective", function (e) {
           let o = document.querySelector("#camera-rig-trackball-origin");
-          if(data.preset != "perspective"){
+          if (data.preset != "perspective") {
             console.log(data.target);
-            document.querySelector("#" + data.currentfloor).emit("teleport-hotspot", { origin: o.object3D.position, hotspot: { id: null, floor: data.currentfloor }});
+            document.querySelector("#" + data.currentfloor).emit("teleport-hotspot", { origin: o.object3D.position, hotspot: { id: null, floor: data.currentfloor } });
           }
           o.components["look-controls"].pitchObject.setRotationFromAxisAngle(new THREE.Vector3(1, 0, 0), THREE.Math.degToRad(-45));
           o.components["look-controls"].yawObject.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.Math.degToRad(45));
+          o.components["look-controls"].updateOrientation();
           data.target = document.querySelector("#camera-rig-trackball-orbit");
           data.preset = "perspective";
+          data.speed = 0.05;
         });
 
         this.el.addEventListener("teleport-hotspot", function (e) {
           let hotspotGroup = document.querySelectorAll(".hotspot");
-          let hotspot = { distance: null, id: null, floor: null };
+          let hotspot = { distance: null, id: null, floor: null, position: null };
 
           hotspotGroup.forEach((n, i) => {
             if (hotspot.distance == null)
               hotspot = {
                 distance: n.object3D.position.distanceTo(e.detail.intersection.point),
                 id: n.getAttribute("id"),
-                floor: n.getAttribute("floor")
+                floor: n.getAttribute("floor"),
+                position: n.object3D.position
               };
 
             else if (hotspot.distance > n.object3D.position.distanceTo(e.detail.intersection.point))
               hotspot = {
                 distance: n.object3D.position.distanceTo(e.detail.intersection.point),
                 id: n.getAttribute("id"),
-                floor: n.getAttribute("floor")
+                floor: n.getAttribute("floor"),
+                position: n.object3D.position
               };
           });
 
@@ -136,21 +141,30 @@
           if (data.preset == "perspective") {
             hr.components["look-controls"].pitchObject.rotation.copy(document.querySelector("#camera-rig-trackball-origin").components["look-controls"].pitchObject.rotation);
             hr.components["look-controls"].yawObject.rotation.copy(document.querySelector("#camera-rig-trackball-origin").components["look-controls"].yawObject.rotation);
+            hr.components["look-controls"].updateOrientation();
             data.preset = "hotspot";
           }
-          hr.object3D.position.copy(document.querySelector("#" + hotspot.id).object3D.position);
+          hr.object3D.position.copy(hotspot.position);
           data.target = hr;
           data.currenthotspot = hotspot.id;
           data.currentfloor = hotspot.floor;
+          data.speed = 0.1;
         });
       },
       tick: function (e) {
         if (this.data.enabled) {
           if (this.data.target != null && this.data.target != "") {
+            if (this.data.preset != "hotspot") {
+              if (this.data.speed < 0.2) {
+                this.data.speed = THREE.Math.lerp(this.data.speed, 0.2, 0.02);
+                //console.log(this.data.speed);
+              }
+            }
+
             let p = this.data.target.object3D.getWorldPosition(new THREE.Vector3());
             let r = this.data.target.object3D.getWorldQuaternion(new THREE.Quaternion());
-            this.el.object3D.position.lerp(p, 0.05);
-            this.el.object3D.quaternion.slerp(r, 0.05);
+            this.el.object3D.position.lerp(p, this.data.speed);
+            this.el.object3D.quaternion.slerp(r, this.data.speed);
           }
         }
       }
@@ -193,7 +207,7 @@
     });
 
   </script>
-  <a-scene device-orientation-permission-ui="enabled: false" a-tour>
+  <a-scene device-orientation-permission-ui="enabled: true" vr-mode-ui="enabled: true" background="color: #000000" a-tour>
     <a-assets>
       <% for(n in dollhouse.floors){ %>
         <img id="<%= 'img-dollhouse-' + dollhouse.floors[n].id %>" crossorigin="anonymous"
@@ -208,7 +222,7 @@
           <% } %>
             <% } %>
     </a-assets>
-    <a-entity id="dollhouse" status="canteleport: true; reverse: false; firsttransition: true;">
+    <a-entity id="dollhouse">
       <% for(n in dollhouse.floors){ %>
         <a-entity obj-model="<%= 'obj: #asset-dollhouse-' + dollhouse.floors[n].id %>"
           id="<%= dollhouse.floors[n].id %>" class="floor"
@@ -229,17 +243,23 @@
             <% } %>
     </a-entity>
 
-    <a-entity id="camera-rig-hotspot" look-controls="enabled: true; reverseMouseDrag: true; reverseTouchDrag: true;"></a-entity>
+    <a-entity id="camera-rig-hotspot" look-controls="enabled: true; reverseMouseDrag: true; reverseTouchDrag: true;">
+    </a-entity>
 
     <a-entity id="camera-rig-trackball-origin" look-controls="enabled: true">
-      <a-entity id="camera-rig-trackball-orbit" position="0 0 20"></a-entity>
+      <a-entity id="camera-rig-trackball-orbit" position="0 0 15"></a-entity>
     </a-entity>
 
     <a-camera camera-rig look-controls="enabled: false">
       <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable">
       </a-entity>
     </a-camera>
+
   </a-scene>
+  <div class="overlay">
+    <button
+      onclick="(function(){document.querySelector('a-camera').emit('teleport-perspective'); console.log('go!')})()">Perspective</button>
+  </div>
 </body>
 
 </html>
