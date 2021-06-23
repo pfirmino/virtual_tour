@@ -41,10 +41,13 @@
           let cam = document.querySelector("a-camera");
           let o = new THREE.Box3().setFromObject(document.querySelector("#dollhouse").object3D);
           let p = o.getCenter(new THREE.Vector3());
-          document.querySelector("#camera-rig-trackball-origin").object3D.position.copy(p);
+          let t =  document.querySelector("#camera-rig-trackball-origin");
+          t.object3D.position.copy(p);
+          t.components["look-controls"].pitchObject.setRotationFromAxisAngle(new THREE.Vector3( 1, 0, 0), THREE.Math.degToRad(-45));
+          t.components["look-controls"].yawObject.setRotationFromAxisAngle(new THREE.Vector3( 0, 1, 0), THREE.Math.degToRad(45));
+          t.components["look-controls"].updateOrientation();
           cam.object3D.position.copy(p);
-          cam.object3D.rotation.x = THREE.Math.degToRad(-45);
-          cam.object3D.rotation.y = THREE.Math.degToRad(45);
+          cam.object3D.rotation.copy(t.object3D.rotation);
           cam.setAttribute("camera-rig", { enabled: true });
           cam.emit("teleport-perspective");
         });
@@ -101,19 +104,22 @@
 
         this.el.addEventListener("teleport-perspective", function (e) {
           let o = document.querySelector("#camera-rig-trackball-origin");
+          let h = document.querySelector("#camera-rig-hotspot");
           if (data.preset != "perspective") {
-            console.log(data.target);
             document.querySelector("#" + data.currentfloor).emit("teleport-hotspot", { origin: o.object3D.position, hotspot: { id: null, floor: data.currentfloor } });
+            o.components["look-controls"].pitchObject.rotation.copy(h.components["look-controls"].pitchObject.rotation);
+            o.components["look-controls"].yawObject.rotation.copy(h.components["look-controls"].yawObject.rotation);
+            o.components["look-controls"].updateOrientation();
+            data.preset = "perspective";
           }
-          o.components["look-controls"].pitchObject.setRotationFromAxisAngle(new THREE.Vector3(1, 0, 0), THREE.Math.degToRad(-45));
-          o.components["look-controls"].yawObject.setRotationFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.Math.degToRad(45));
-          o.components["look-controls"].updateOrientation();
           data.target = document.querySelector("#camera-rig-trackball-orbit");
-          data.preset = "perspective";
-          data.speed = 0.05;
+          data.speed = 0.02;
+          o.setAttribute("look-controls", {enabled: true, magicWindowTrackingEnabled: false});
+          h.setAttribute("look-controls", {enabled: false});
         });
 
         this.el.addEventListener("teleport-hotspot", function (e) {
+          //Query all hotspots to findout  which one is the nearer
           let hotspotGroup = document.querySelectorAll(".hotspot");
           let hotspot = { distance: null, id: null, floor: null, position: null };
 
@@ -134,31 +140,34 @@
                 position: n.object3D.position
               };
           });
-
+          //After finding the hotspot, emits the teleport events to the obj to make texture transiction
           document.querySelector("#" + hotspot.floor).emit("teleport-hotspot", { origin: document.querySelector("#" + hotspot.id).object3D.position, hotspot: hotspot });
 
-          let hr = document.querySelector("#camera-rig-hotspot");
+          //Computes the right orientation for the camera movement
+          let h = document.querySelector("#camera-rig-hotspot");
+          let o = document.querySelector("#camera-rig-trackball-origin");
           if (data.preset == "perspective") {
-            hr.components["look-controls"].pitchObject.rotation.copy(document.querySelector("#camera-rig-trackball-origin").components["look-controls"].pitchObject.rotation);
-            hr.components["look-controls"].yawObject.rotation.copy(document.querySelector("#camera-rig-trackball-origin").components["look-controls"].yawObject.rotation);
-            hr.components["look-controls"].updateOrientation();
+            h.components["look-controls"].pitchObject.rotation.copy(o.components["look-controls"].pitchObject.rotation);
+            h.components["look-controls"].yawObject.rotation.copy(o.components["look-controls"].yawObject.rotation);
+            h.components["look-controls"].updateOrientation();
             data.preset = "hotspot";
           }
-          hr.object3D.position.copy(hotspot.position);
-          data.target = hr;
+          h.object3D.position.copy(hotspot.position);
+          data.target = h;
           data.currenthotspot = hotspot.id;
           data.currentfloor = hotspot.floor;
-          data.speed = 0.1;
+          data.speed = 0.02;
+          h.setAttribute("look-controls", {enabled: true, magicWindowTrackingEnabled: false});
+          o.setAttribute("look-controls", {enabled: false});
         });
       },
       tick: function (e) {
         if (this.data.enabled) {
           if (this.data.target != null && this.data.target != "") {
-            if (this.data.preset != "hotspot") {
-              if (this.data.speed < 0.2) {
-                this.data.speed = THREE.Math.lerp(this.data.speed, 0.2, 0.02);
-                //console.log(this.data.speed);
-              }
+            
+            if (this.data.speed < 0.5) {
+              this.data.speed = THREE.Math.lerp(this.data.speed, 0.5, 0.01);
+              //console.log(this.data.speed);
             }
 
             let p = this.data.target.object3D.getWorldPosition(new THREE.Vector3());
@@ -207,7 +216,7 @@
     });
 
   </script>
-  <a-scene device-orientation-permission-ui="enabled: true" vr-mode-ui="enabled: true" background="color: #000000" a-tour>
+  <a-scene device-orientation-permission-ui="enabled: true" vr-mode-ui="enabled: false" background="color: #000000" a-tour>
     <a-assets>
       <% for(n in dollhouse.floors){ %>
         <img id="<%= 'img-dollhouse-' + dollhouse.floors[n].id %>" crossorigin="anonymous"
@@ -243,10 +252,10 @@
             <% } %>
     </a-entity>
 
-    <a-entity id="camera-rig-hotspot" look-controls="enabled: true; reverseMouseDrag: true; reverseTouchDrag: true;">
+    <a-entity id="camera-rig-hotspot" look-controls="enabled: false; reverseMouseDrag: true; reverseTouchDrag: true;">
     </a-entity>
 
-    <a-entity id="camera-rig-trackball-origin" look-controls="enabled: true">
+    <a-entity id="camera-rig-trackball-origin" look-controls="enabled: true; magicWindowTrackingEnabled: false;">
       <a-entity id="camera-rig-trackball-orbit" position="0 0 15"></a-entity>
     </a-entity>
 
