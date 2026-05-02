@@ -5,7 +5,7 @@ It enables multi-floor navigation, 360° hotspots, and smooth camera transitions
 
 <p align="center">
   <img src="media/persp-to-panorama.gif" width="48%" />
-  <img src="media/blend-camera.gif" width="48%" />
+  <img src="media/camera-blend.gif" width="48%" />
 </p>
 
 ---
