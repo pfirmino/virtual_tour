@@ -96,7 +96,8 @@
         target: { type: "selector", default: "#camera-rig-trackball-orbit" },
         currenthotspot: { type: "string" },
         currentfloor: { type: "string" },
-        speed: { type: "number", default: 0.05 }
+        speed: { type: "number", default: 0.05 },
+        fov: { type: "number", default: 50 },
       },
       init: function () {
         let data = this.data;
@@ -105,6 +106,7 @@
         this.el.addEventListener("teleport-perspective", function (e) {
           let o = document.querySelector("#camera-rig-trackball-origin");
           let h = document.querySelector("#camera-rig-hotspot");
+
           if (data.preset != "perspective") {
             document.querySelector("#" + data.currentfloor).emit("teleport-hotspot", { origin: o.object3D.position, hotspot: { id: null, floor: data.currentfloor } });
             o.components["look-controls"].pitchObject.rotation.copy(h.components["look-controls"].pitchObject.rotation);
@@ -116,6 +118,7 @@
           data.speed = 0.02;
           o.setAttribute("look-controls", {enabled: true, magicWindowTrackingEnabled: false});
           h.setAttribute("look-controls", {enabled: false});
+          data.fov = 50;
         });
 
         this.el.addEventListener("teleport-hotspot", function (e) {
@@ -146,6 +149,7 @@
           //Computes the right orientation for the camera movement
           let h = document.querySelector("#camera-rig-hotspot");
           let o = document.querySelector("#camera-rig-trackball-origin");
+          
           if (data.preset == "perspective") {
             h.components["look-controls"].pitchObject.rotation.copy(o.components["look-controls"].pitchObject.rotation);
             h.components["look-controls"].yawObject.rotation.copy(o.components["look-controls"].yawObject.rotation);
@@ -159,6 +163,7 @@
           data.speed = 0.02;
           h.setAttribute("look-controls", {enabled: true, magicWindowTrackingEnabled: true});
           o.setAttribute("look-controls", {enabled: false});
+          data.fov = 90;
         });
       },
       tick: function (e) {
@@ -166,8 +171,11 @@
           if (this.data.target != null && this.data.target != "") {
             
             if (this.data.speed < 0.5) {
+              let cam = document.querySelector("a-camera");
+              console.log(cam.getAttribute("fov"));
+              cam.setAttribute("fov", THREE.Math.lerp(cam.getAttribute("fov"), this.data.fov, this.data.speed));
               this.data.speed = THREE.Math.lerp(this.data.speed, 0.5, 0.01);
-              //console.log(this.data.speed);
+
             }
 
             let p = this.data.target.object3D.getWorldPosition(new THREE.Vector3());
@@ -256,10 +264,10 @@
     </a-entity>
 
     <a-entity id="camera-rig-trackball-origin" look-controls="enabled: true; magicWindowTrackingEnabled: false;">
-      <a-entity id="camera-rig-trackball-orbit" position="0 -2 12"></a-entity>
+      <a-entity id="camera-rig-trackball-orbit" position="0 -2 15"></a-entity>
     </a-entity>
 
-    <a-camera camera-rig look-controls="enabled: false">
+    <a-camera camera-rig look-controls="enabled: false" fov="50">
       <a-entity cursor="rayOrigin: mouse" raycaster="objects: .clickable">
       </a-entity>
     </a-camera>
