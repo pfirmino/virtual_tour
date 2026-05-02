@@ -1,0 +1,131 @@
+{
+    "title": "Virtual Tour",
+    "description": "A project for testing virtual tours",
+    "tags": "virtual tour, test, dev",
+    "owner": "pfirmino",
+    "created": "xx-xx-xx as xx:xxh",
+    "updated": "xx-xx-xx as xx:xxh",
+    "areas": {
+        "position": {
+            "class": "vec3",
+            "x": 0,
+            "y": 0,
+            "z": 0
+        },
+        "area1": {
+            "id": "area1",
+            "class": "area",
+            "name": "Ground Floor",
+            "position": {
+                "class": "vec3",
+                "x": 0,
+                "y": 0,
+                "z": 0
+            },
+            "mesh": "dollhouse.obj",
+            "navmesh": "navmesh.obj",
+            "image": "dollhouse.jpg",
+            "hotspots": {
+                "hotspot1": {
+                    "id": "hotspot1",
+                    "class": "hotspot",
+                    "position": {
+                        "class": "vec3",
+                        "x": 17.258,
+                        "y": 1.7,
+                        "z": -3.516
+                    },
+                    "image": "virtual_tour_360_01.jpg"
+                },
+                "hotspot2": {
+                    "id": "hotspot2",
+                    "class": "hotspot",
+                    "position": {
+                        "class": "vec3",
+                        "x": 14.369,
+                        "y": 1.7,
+                        "z": -3.628
+                    },
+                    "image": "virtual_tour_360_02.jpg"
+                },
+                "hotspot3": {
+                    "id": "hotspot3",
+                    "class": "hotspot",
+                    "position": {
+                        "class": "vec3",
+                        "x": 16.061,
+                        "y": 1.7,
+                        "z": -5.385
+                    },
+                    "image": "virtual_tour_360_03.jpg"
+                },
+                "hotspot4": {
+                    "id": "hotspot4",
+                    "class": "hotspot",
+                    "position": {
+                        "class": "vec3",
+                        "x": 14.102,
+                        "y": 1.7,
+                        "z": -5.185
+                    },
+                    "image": "virtual_tour_360_04.jpg"
+                },
+                "hotspot5": {
+                    "id": "hotspot5",
+                    "class": "hotspot",
+                    "position": {
+                        "class": "vec3",
+                        "x": 18.031,
+                        "y": 1.7,
+                        "z": -5.293
+                    },
+                    "image": "virtual_tour_360_05.jpg"
+                },
+                "hotspot6": {
+                    "id": "hotspot6",
+                    "class": "hotspot",
+                    "position": {
+                        "class": "vec3",
+                        "x": 15.408,
+                        "y": 1.7,
+                        "z": -7.333
+                    },
+                    "image": "virtual_tour_360_06.jpg"
+                },
+                "hotspot7": {
+                    "id": "hotspot7",
+                    "class": "hotspot",
+                    "position": {
+                        "class": "vec3",
+                        "x": 14.335,
+                        "y": 1.7,
+                        "z": -8.096
+                    },
+                    "image": "virtual_tour_360_07.jpg"
+                },
+                "hotspot8": {
+                    "id": "hotspot8",
+                    "class": "hotspot",
+                    "position": {
+                        "class": "vec3",
+                        "x": 16.882,
+                        "y": 1.7,
+                        "z": -9.433
+                    },
+                    "image": "virtual_tour_360_08.jpg"
+                },
+                "hotspot9": {
+                    "id": "hotspot9",
+                    "class": "hotspot",
+                    "position": {
+                        "class": "vec3",
+                        "x": 17.302,
+                        "y": 1.7,
+                        "z": -12.312
+                    },
+                    "image": "virtual_tour_360_09.jpg"
+                }
+            }
+        }
+    }
+}

@@ -243,8 +243,8 @@
           cursor-listener class="clickable">
         </a-entity>
         <% for(i in dollhouse.floors[n].hotspots){ %>
-          <a-entity class="hotspot" visible="false" floor="<%= dollhouse.floors[n].id %>"
-            geometry="primitive: plane; width:0.3; height: 0.3;" rotation="-90 0 0" material="shader: flat; color: red;"
+          <a-entity class="hotspot" visible="true" floor="<%= dollhouse.floors[n].id %>"
+            geometry="primitive: sphere; radius:0.075;" rotation="0 0 0" material="shader: flat; color: cyan;"
             id="<%= dollhouse.floors[n].hotspots[i].id %>"
             position="<%= dollhouse.floors[n].hotspots[i].position.x %> <%= dollhouse.floors[n].hotspots[i].position.y %> <%= dollhouse.floors[n].hotspots[i].position.z %>">
           </a-entity>

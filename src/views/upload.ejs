@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Virtual Tour Upload</title>
+    <style>
+        #desc {
+            width: fit-content;
+            width: -webkit-fill-available;
+        }
+
+        .areas,
+        .hotspots {
+            border: none;
+            margin: 0;
+            border: 0;
+            padding: 0;
+        }
+
+        button,
+        .hotspot {
+            margin-top: 15px;
+        }
+
+        .area {
+            margin-top: 25px;
+        }
+
+        #area-1 {
+            margin-top: 5px;
+        }
+
+        label[for="images"] {
+            display: inline-block;
+            margin-top: 25px;
+        }
+
+        #x,
+        #y,
+        #z {
+            width: 40px;
+        }
+
+        label[for="position"] {
+            display: inline-block;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<script>
+    function UpdateForm() {
+        let c = document.querySelector("#configjson");
+        var fr = new FileReader();
+        fr.onload = function () {
+            let r = JSON.parse(fr.result);
+
+            if (r.title)
+                document.querySelector("#title").value = r.title;
+
+            if (r.description)
+                document.querySelector("#desc").value = r.description;
+
+            if (r.tags)
+                document.querySelector("#tags").value = r.tags;
+
+            if (!r.areas)
+                alert("Areas not found!");
+
+            else {
+                document.querySelector(".areas").innerHTML = "";
+
+                if (r.areas) {
+                    let s = document.querySelector(".scene");
+                    s.querySelector("#x").value = r.areas.position.x;
+                    s.querySelector("#y").value = r.areas.position.y;
+                    s.querySelector("#z").value = r.areas.position.z;
+                }
+
+                for (let e in r.areas) {
+                    if (r.areas[e].class == "area") {
+                        let a = AddArea(r.areas[e].id);
+
+                        a.querySelector("#name").value = r.areas[e].name;
+                        a.querySelector("#x").value = r.areas[e].position.x;
+                        a.querySelector("#y").value = r.areas[e].position.y;
+                        a.querySelector("#z").value = r.areas[e].position.z;
+
+                        if (r.areas[e].hotspots) {
+                            for (let e1 in r.areas[e].hotspots) {
+                                let h = AddHotspot(a.getAttribute("id"), r.areas[e].hotspots[e1].id);
+                                h.querySelector("#x").value = r.areas[e].hotspots[e1].position.x;
+                                h.querySelector("#y").value = r.areas[e].hotspots[e1].position.y;
+                                h.querySelector("#z").value = r.areas[e].hotspots[e1].position.z;
+                            }
+                        } else {
+                            AddHotspot(a.getAttribute("id"), "hotspot1");
+                        }
+                    }
+                }
+                // Persist Data
+                StoreLocalData();
+            }
+
+        }
+
+        fr.readAsText(c.files[0]);
+    }
+
+    function CreateHotspot(n, a) {
+        let h = document.createElement("fieldset");
+
+        h.setAttribute("class", "hotspot");
+        h.setAttribute("id", "hotspot" + n);
+
+        h.innerHTML = `
+            <legend>Hotspot `+ n + `</legend>
+            <label for="image">Select image (JPG)</label><br>
+            <input type="file" id="image" name="image" /><br>
+            <label for="position">Position</label><br>
+            <label for="x">x</label>
+            <input type="number" id="x" name="x" value="0" step="0.001" />
+            <label for="y">y</label>
+            <input type="number" id="y" name="y" value="0" step="0.001" />
+            <label for="z">z</label>
+            <input type="number" id="z" name="z" value="0" step="0.001" />
+            <br>
+            <button type="button" id="deletehotspot" onclick="DeleteHotspot('hotspot` + n + `'    ,'` + a + `'); StoreLocalData();">Delete Hotspot</button>
+        `
+        return h;
+    }
+
+    function AddHotspot(area) {
+        if (area) {
+            let hs = document.querySelector("#" + area).querySelector(".hotspots");
+            let hn = hs.querySelectorAll(".hotspot");
+            let h = CreateHotspot(hn.length + 1, area);
+
+            hs.appendChild(h);
+            return h;
+        }
+    }
+
+    function DeleteHotspot(id, area) {
+        let e = document.querySelector("#" + id);
+        e.remove();
+
+        let h = document.querySelector("#" + area).querySelector(".hotspots").querySelectorAll(".hotspot");
+
+        h.forEach((e, i, a) => {
+            e.setAttribute("id", "hotspot" + (i + 1));
+            e.querySelector("#deletehotspot").setAttribute("onclick", "DeleteHotspot('hotspot" + (i + 1) + "','" + area + "')");
+            e.childNodes[1].innerHTML = "Hotspot " + (i + 1);
+            console.log(e.childNodes[1]);
+        });
+    }
+
+    function CreateArea(n) {
+        let a = document.createElement("fieldset");
+
+        a.setAttribute("class", "area");
+        a.setAttribute("id", "area" + n);
+
+        a.innerHTML = `
+                <legend>Area ` + n + `</legend>
+                <label for="name">Area name</label><br>
+                <input type="text" id="name" name="name" /><br>
+                <label for="mesh">Select mesh (OBJ)</label><br>
+                <input type="file" id="mesh" name="mesh" /><br>
+                <label for="navmesh">Select navmesh (OBJ)</label><br>
+                <input type="file" id="navmesh" name="navmesh" /><br>
+                <label for="image">Select dollhouse texture (JPG)</label><br>
+                <input type="file" id="image" name="image" /><br>
+                <label for="position">Position</label><br>
+                <label for="x">x</label>
+                <input type="number" id="x" name="x" value="0" step="0.001" />
+                <label for="y">y</label>
+                <input type="number" id="y" name="y" value="0" step="0.001" />
+                <label for="z">z</label>
+                <input type="number" id="z" name="z" value="0" step="0.001" />
+                <br>
+                <fieldset class="hotspots">
+                </fieldset>
+                <label for="images">Load sequence images</label><br>
+                <input type="file" id="images" name="images" multiple/><br>
+                <button type="button" id="addhotspot" onclick="AddHotspot('area` + n + `'); StoreLocalData();">Add Hotspot</button>
+                <button type="button" id="deletearea" onclick="DeleteArea('area` + n + `'); StoreLocalData();">Delete Area</button>
+        `
+        return a;
+    }
+
+    function AddArea() {
+        let s = document.querySelector(".areas");
+        let an = document.querySelectorAll(".area");
+        let a = CreateArea(an.length + 1);
+
+        s.appendChild(a);
+        return a;
+    }
+
+    function DeleteArea(id) {
+        let e = document.querySelector("#" + id);
+        e.remove();
+
+        let a = document.querySelectorAll(".area");
+
+        a.forEach((e, i, a) => {
+            e.setAttribute("id", "area" + (i + 1));
+            e.querySelector("#deletearea").setAttribute("onclick", "DeleteArea('area" + (i + 1) + "')");
+            e.childNodes[1].innerHTML = "Area " + (i + 1);
+            console.log(e.childNodes[1]);
+        });
+    }
+
+    function GetLocalData() {
+        let d = sessionStorage.getItem("projectsettings");
+        let _do;
+
+        if (d != null) {
+            let as = 0; //Areas Size
+            let hs = 0; //Hotspots Size
+
+            _do = JSON.parse(d);
+
+            document.querySelector(".areas").innerHTML = "";
+
+            if (_do.title)
+                document.querySelector("#title").value = _do.title;
+
+            if (_do.desc)
+                document.querySelector("#desc").value = _do.desc;
+
+            if (_do.tags)
+                document.querySelector("#tags").value = _do.tags;
+
+            if (_do.areas) {
+                for (let e in _do.areas) {
+                    as++;
+                    let a = document.querySelector("#area" + as);
+
+                    if (!a)
+                        a = AddArea();
+
+                    a.querySelector("#name").value = _do.areas[e].name;
+                    a.querySelector("#x").value = _do.areas[e].position.x;
+                    a.querySelector("#y").value = _do.areas[e].position.y;
+                    a.querySelector("#z").value = _do.areas[e].position.z;
+
+                    for (let e1 in _do.areas[e].hotspots) {
+                        hs++;
+                        let h = a.querySelector("#hotspot" + hs);
+
+                        if (!h)
+                            h = AddHotspot(a.getAttribute("id"));
+
+                        h.querySelector("#x").value = _do.areas[e].hotspots[e1].position.x;
+                        h.querySelector("#y").value = _do.areas[e].hotspots[e1].position.y;
+                        h.querySelector("#z").value = _do.areas[e].hotspots[e1].position.z;
+                    }
+                }
+            }
+        }
+    }
+
+    function StoreLocalData() {
+        let d = {
+            title: document.querySelector("#title").value,
+            desc: document.querySelector("#desc").value,
+            tags: document.querySelector("#tags").value
+        }
+
+        a = document.querySelector(".areas").querySelectorAll(".area");
+
+
+        if (a.length >= 1) {
+            d.areas = {};
+            a.forEach((e, i, o) => {
+                d.areas[e.getAttribute("id")] = {
+                    name: e.querySelector("#name").value,
+                    position: {
+                        x: e.querySelector("#x").value,
+                        y: e.querySelector("#y").value,
+                        z: e.querySelector("#z").value
+                    }
+                };
+
+                let h = e.querySelector(".hotspots").querySelectorAll(".hotspot");
+
+                if (h.length >= 1) {
+                    d.areas[e.getAttribute("id")].hotspots = {};
+                    h.forEach((e1, i1, o1) => {
+                        d.areas[e.getAttribute("id")].hotspots[e1.getAttribute("id")] = {
+                            name: e1.querySelector("legend").innerHTML,
+                            position: {
+                                x: e1.querySelector("#x").value,
+                                y: e1.querySelector("#y").value,
+                                z: e1.querySelector("#z").value
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        sessionStorage.setItem("projectsettings", JSON.stringify(d));
+    }
+
+    function Start() {
+        AddArea();
+        AddHotspot("area1");
+        GetLocalData();
+
+        let f = document.querySelector("#projectsettings");
+    }
+</script>
+
+<body onload="Start();">
+    <form id="projectsettings" action="/upload" method="post" enctype="multipart/form-data"
+        onchange="StoreLocalData();">
+        <fieldset>
+            <legend>Load config from JSON File (Optional)</legend>
+            <input type="file" id="configjson" name="configjson" onchange="UpdateForm();" /><br>
+        </fieldset>
+        <fieldset>
+            <legend>Project Description</legend>
+            <label for="title">Title</label><br>
+            <input type="Text" id="title" name="title" /><br>
+            <label for="desc">Description (Optional)</label><br>
+            <textarea type="Text" id="desc" name="desc" /></textarea><br>
+            <label for="tags">Tags</label><br>
+            <input type="Text" id="tags" name="tags" /><br>
+        </fieldset>
+        <fieldset class="scene">
+            <legend>Scene</legend>
+            <label for="position">Origin Position</label><br>
+            <label for="x">x</label>
+            <input type="number" id="x" name="x" value="0" step="0.001" />
+            <label for="y">y</label>
+            <input type="number" id="y" name="y" value="0" step="0.001" />
+            <label for="z">z</label>
+            <input type="number" id="z" name="z" value="0" step="0.001" />
+            <br>
+            <fieldset class="areas">
+            </fieldset>
+            <button type="button" id="addarea" onclick="AddArea(); StoreLocalData();">Add Area</button>
+            <button type="button" id="save">Save</button>
+            <input type="submit" id="submit" value="Submit" />
+        </fieldset>
+    </form>
+</body>
+
+</html>
