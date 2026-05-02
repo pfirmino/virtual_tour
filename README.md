@@ -46,14 +46,15 @@ This project uses a custom A-Frame GLSL shader to support:
 ### Mesh UV
 ```glsl
 u_uv1 = 1;
-u_uv2 = 1;```
+u_uv2 = 1;
+```
 
 Standard model UV mapping (used for dollhouse geometry).
 
 Spherical Projection (360°)
 ```u_uv1 = 0;
-u_uv2 = 0;```
-
+u_uv2 = 0;
+```
 Converts world position into equirectangular UVs based on hotspot origin.
 
 ### 🔄 Texture Blending
@@ -65,7 +66,8 @@ Core transition logic:
     textureLod(u_map1, uv1, 0.0).xyz,
     textureLod(u_map2, uv2, 0.0).xyz,
     u_factor
-  );```
+  );
+```
 Behavior:
 0.0 → only map1
 1.0 → only map2
@@ -75,8 +77,8 @@ in-between → smooth crossfade
 Each hotspot defines a world-space origin:
 
 ```u_map1_origin
-u_map2_origin```
-
+u_map2_origin
+```
 Used to:
 
 Anchor 360° projection
@@ -96,8 +98,8 @@ Result: correct alignment of 360° images in 3D space.
 
 When a hotspot is clicked:
 
-Current texture → u_map1
-Target panorama → u_map2
+Current texture → `u_map1`
+Target panorama → `u_map2`
 Update origin position
 Animate u_factor → 1
 
@@ -126,11 +128,6 @@ Enables seamless hotspot navigation
 Drives all visual transitions in the virtual tour
 
 ---
-
-If you want next step, I can:
-- turn this into a **GitHub-ready project page with badges + screenshots section**
-- or help you add a **shader diagram (very useful for portfolios)**
-- or simplify it further into a **portfolio case study format (1-page style)**
 
 ### 👤 Author
 
