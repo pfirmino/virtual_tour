@@ -3,6 +3,11 @@
 A web-based interactive 3D virtual tour system built with **Node.js, Express, and A-Frame (WebXR/WebGL)**.  
 It enables multi-floor navigation, 360° hotspots, and smooth camera transitions in a 3D environment.
 
+<p align="center">
+  <img src="media/persp-to-panorama.gif" width="48%" />
+  <img src="media/blend-camera.gif" width="48%" />
+</p>
+
 ---
 
 ## 🚀 Features
